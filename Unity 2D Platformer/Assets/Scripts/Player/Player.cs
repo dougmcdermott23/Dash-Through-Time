@@ -20,9 +20,11 @@ public class Player : MonoBehaviour {
 	public float maxJumpHeight = 4;
 	public float minJumpHeight = 1;
 	public float timeToJumpApex = 0.4f;
+	public float jumpBufferMaxTime = 0.1f;
 	float maxJumpVelocity;
 	float minJumpVelocity = 0;
 	float gravity;
+	float jumpBufferTimer;
 
 	// Wallsliding
 	public Vector2 wallJumpClimb;
@@ -46,8 +48,9 @@ public class Player : MonoBehaviour {
 
 	void Update ()
 	{
+		CheckJumpBuffer();
 		CalculatePlayerVelocity();
-		CheckWallsliding();
+		CheckWallSliding();
 		
 		controller.Move (velocity * Time.deltaTime, input);
 
@@ -64,7 +67,7 @@ public class Player : MonoBehaviour {
 
 	// Handle player sliding against a vertical wall
 	// If directional input is in opposite direction of the wall while sliding, move after a slight delay to allow for player jump input
-	void CheckWallsliding()
+	void CheckWallSliding()
 	{
 		wallDirX = (controller.collisions.left) ? -1 : 1;
 
@@ -93,6 +96,22 @@ public class Player : MonoBehaviour {
 		}
 	}
 
+	void CheckJumpBuffer()
+	{
+		if (controller.collisions.below)
+		{
+			if (jumpBufferTimer > 0)
+			{
+				HandleGroundedJump();
+				jumpBufferTimer = 0;
+			}
+		}
+		else
+		{
+			jumpBufferTimer -= Time.deltaTime;
+		}
+	}
+
 	public void SetDirectionalInput(Vector2 directionInput)
 	{
 		input = directionInput;
@@ -103,36 +122,15 @@ public class Player : MonoBehaviour {
 	{
 		if (wallSliding)
 		{
-			if (wallDirX == input.x)
-			{
-				velocity.x = -wallDirX * wallJumpClimb.x;
-				velocity.y = wallJumpClimb.y;
-			}
-			else if (input.x == 0)
-			{
-				velocity.x = -wallDirX * wallJumpOff.x;
-				velocity.y = wallJumpOff.y;
-			}
-			else
-			{
-				velocity.x = -wallDirX * wallJumpLeap.x;
-				velocity.y = wallJumpLeap.y;
-			}
+			HandleWallSlideJump();
 		}
 		if (controller.collisions.below)
 		{
-			if (controller.collisions.slidingDownSlope)
-			{
-				if (input.x != -Mathf.Sign(controller.collisions.slopeNormal.x))
-				{
-					velocity.y = maxJumpVelocity * controller.collisions.slopeNormal.y;
-					velocity.x = maxJumpVelocity * controller.collisions.slopeNormal.x;
-				}
-			}
-			else
-			{
-				velocity.y = maxJumpVelocity;
-			}
+			HandleGroundedJump();
+		}
+		else
+		{
+			jumpBufferTimer = jumpBufferMaxTime;
 		}
 	}
 
@@ -140,5 +138,40 @@ public class Player : MonoBehaviour {
 	{
 		if (velocity.y > minJumpVelocity)
 			velocity.y = minJumpVelocity;
+	}
+
+	void HandleWallSlideJump()
+	{
+		if (wallDirX == input.x)
+		{
+			velocity.x = -wallDirX * wallJumpClimb.x;
+			velocity.y = wallJumpClimb.y;
+		}
+		else if (input.x == 0)
+		{
+			velocity.x = -wallDirX * wallJumpOff.x;
+			velocity.y = wallJumpOff.y;
+		}
+		else
+		{
+			velocity.x = -wallDirX * wallJumpLeap.x;
+			velocity.y = wallJumpLeap.y;
+		}
+	}
+
+	void HandleGroundedJump()
+	{
+		if (controller.collisions.slidingDownSlope)
+		{
+			if (input.x != -Mathf.Sign(controller.collisions.slopeNormal.x))
+			{
+				velocity.y = maxJumpVelocity * controller.collisions.slopeNormal.y;
+				velocity.x = maxJumpVelocity * controller.collisions.slopeNormal.x;
+			}
+		}
+		else
+		{
+			velocity.y = maxJumpVelocity;
+		}
 	}
 }
