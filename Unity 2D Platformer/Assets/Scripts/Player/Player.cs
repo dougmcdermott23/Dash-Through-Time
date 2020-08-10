@@ -20,10 +20,12 @@ public class Player : MonoBehaviour {
 	public float maxJumpHeight = 4;
 	public float minJumpHeight = 1;
 	public float timeToJumpApex = 0.4f;
+	public float coytoteTimeJumpMaxTime = 0.1f;
 	public float jumpBufferMaxTime = 0.1f;
 	float maxJumpVelocity;
 	float minJumpVelocity = 0;
 	float gravity;
+	float coyoteTimeJumpTimer;
 	float jumpBufferTimer;
 
 	// Wallsliding
@@ -48,10 +50,12 @@ public class Player : MonoBehaviour {
 
 	void Update ()
 	{
-		CheckJumpBuffer();
 		CalculatePlayerVelocity();
+
+		CheckGroundControlTimers();
 		CheckWallSliding();
-		
+		CheckJumpBuffer();
+
 		controller.Move (velocity * Time.deltaTime, input);
 
 		if (controller.collisions.above || controller.collisions.below && !controller.collisions.slidingDownSlope)
@@ -112,6 +116,18 @@ public class Player : MonoBehaviour {
 		}
 	}
 
+	void CheckGroundControlTimers()
+	{
+		if (controller.collisions.below)
+		{
+			coyoteTimeJumpTimer = coytoteTimeJumpMaxTime;
+		}
+		else
+		{
+			coyoteTimeJumpTimer -= Time.deltaTime;
+		}
+	}
+
 	public void SetDirectionalInput(Vector2 directionInput)
 	{
 		input = directionInput;
@@ -124,20 +140,29 @@ public class Player : MonoBehaviour {
 		{
 			HandleWallSlideJump();
 		}
-		if (controller.collisions.below)
+		else if (controller.collisions.below)
 		{
 			HandleGroundedJump();
 		}
 		else
 		{
-			jumpBufferTimer = jumpBufferMaxTime;
+			if (coyoteTimeJumpTimer > 0)
+			{
+				HandleCoyoteTimeJump();
+			}
+			else
+			{
+				HandleBufferJump();
+			}
 		}
 	}
 
 	public void OnJumpInputUp()
 	{
 		if (velocity.y > minJumpVelocity)
+		{
 			velocity.y = minJumpVelocity;
+		}
 	}
 
 	void HandleWallSlideJump()
@@ -157,6 +182,8 @@ public class Player : MonoBehaviour {
 			velocity.x = -wallDirX * wallJumpLeap.x;
 			velocity.y = wallJumpLeap.y;
 		}
+
+		coyoteTimeJumpTimer = 0;
 	}
 
 	void HandleGroundedJump()
@@ -173,5 +200,19 @@ public class Player : MonoBehaviour {
 		{
 			velocity.y = maxJumpVelocity;
 		}
+
+		coyoteTimeJumpTimer = 0;
+	}
+
+	void HandleCoyoteTimeJump()
+	{
+		velocity.y = maxJumpVelocity;
+
+		coyoteTimeJumpTimer = 0;
+	}
+
+	void HandleBufferJump()
+	{
+		jumpBufferTimer = jumpBufferMaxTime;
 	}
 }
