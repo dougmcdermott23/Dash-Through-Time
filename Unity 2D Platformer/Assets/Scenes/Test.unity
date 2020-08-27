@@ -269,9 +269,11 @@ MonoBehaviour:
   maxJumpHeight: 4
   minJumpHeight: 1
   timeToJumpApex: 0.4
+  coytoteTimeJumpMaxTime: 0.1
+  jumpBufferMaxTime: 0.1
   wallJumpClimb: {x: 5, y: 20}
   wallJumpOff: {x: 10, y: 10}
-  wallJumpLeap: {x: 20, y: 10}
+  wallJumpLeap: {x: 10, y: 20}
   wallSlideSpeedMax: 3
   wallStickTime: 0.25
 --- !u!1 &287890228
@@ -595,6 +597,7 @@ GameObject:
   - component: {fileID: 1098768353}
   - component: {fileID: 1098768352}
   - component: {fileID: 1098768351}
+  - component: {fileID: 1098768355}
   m_Layer: 9
   m_Name: Obstacle (9)
   m_TagString: Through
@@ -687,6 +690,30 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1098768355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1098768350}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb87d23ac9afd574d84b8673d5bc82f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  collisionMask:
+    serializedVersion: 2
+    m_Bits: 0
+  collider2D: {fileID: 0}
+  horizontalRaySpacing: 0
+  verticalRaySpacing: 0
+  horizontalRayCount: 4
+  verticalRayCount: 16
+  passengerMask:
+    serializedVersion: 2
+    m_Bits: 256
+  springVelocity: 20
 --- !u!1 &1276405034
 GameObject:
   m_ObjectHideFlags: 0

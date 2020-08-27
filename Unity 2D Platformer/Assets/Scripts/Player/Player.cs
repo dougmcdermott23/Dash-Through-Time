@@ -165,6 +165,11 @@ public class Player : MonoBehaviour {
 		}
 	}
 
+	public void OnSpringPlatform(Vector3 springVelocity)
+	{
+		velocity += springVelocity;
+	}
+
 	void HandleWallSlideJump()
 	{
 		if (wallDirX == input.x)
