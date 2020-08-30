@@ -28,4 +28,9 @@ public class PlayerInput : MonoBehaviour
             player.OnJumpInputUp();
         }
     }
+
+    public void SpringJump(Vector3 springVelocity)
+    {
+        player.OnSpringPlatform(springVelocity);
+    }
 }

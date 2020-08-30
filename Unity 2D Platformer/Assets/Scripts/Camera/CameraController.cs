@@ -23,12 +23,12 @@ public class CameraController : MonoBehaviour
 
 	void Start()
 	{
-		focusArea = new FocusArea(target.collider2D.bounds, focusAreaSize);
+		focusArea = new FocusArea(target.GetComponent<Collider2D>().bounds, focusAreaSize);
 	}
 
 	void LateUpdate()
 	{
-		focusArea.Update(target.collider2D.bounds);
+		focusArea.Update(target.GetComponent<Collider2D>().bounds);
 
 		Vector2 focusPosition = focusArea.centre + Vector2.up * verticalOffset;
 

@@ -35,6 +35,9 @@ public class Controller : RaycastController
 		if (velocity.y != 0)
 			VerticalCollisions(ref velocity, input);
 
+		if (collisions.onPlatform)
+			collisions.platform.PlayerInteraction(transform.gameObject);
+
 		if (standingOnPlatform)
 			collisions.below = true;
 
@@ -62,6 +65,13 @@ public class Controller : RaycastController
 				// Player is falling or jumping through an object
 				if (hit.distance == 0 && !collisions.below)
 					continue;
+
+				Platform platform = hit.transform.GetComponent<Platform>();
+				if (platform != null)
+				{
+					collisions.onPlatform = true;
+					collisions.platform = platform;
+				}
 
 				float slopeAngle = Vector2.Angle(hit.normal, Vector2.up);
 
@@ -118,7 +128,7 @@ public class Controller : RaycastController
 
 			if (hit)
 			{
-				// If object has the "Through" tag, player may jump through the bottom or fall through the top of the object
+				// If obstacle has the "Through" tag, player may jump through the bottom or fall through the top of the object
 				if (hit.collider.CompareTag("Through"))
 				{
 					if (directionY == 1 || hit.distance == 0)
@@ -135,6 +145,13 @@ public class Controller : RaycastController
 						Invoke("ResetFallingThroughPlatform", 0.25f);
 						continue;
 					}
+				}
+
+				Platform platform = hit.transform.GetComponent<Platform>();
+				if (platform != null)
+				{
+					collisions.onPlatform = true;
+					collisions.platform = platform;
 				}
 
 				// Collision detected, update variables and reset ray length to only detect other collisions that are closer
@@ -269,6 +286,8 @@ public class Controller : RaycastController
 		public int facingRight;
 
 		public bool fallingThroughPlatform;
+		public bool onPlatform;
+		public Platform platform;
 
 		public bool climbingSlope;
 		public bool descendingSlope;
@@ -285,6 +304,9 @@ public class Controller : RaycastController
 			below = false;
 			left = false;
 			right = false;
+
+			onPlatform = false;
+			platform = null;
 
 			climbingSlope = false;
 			descendingSlope = false;

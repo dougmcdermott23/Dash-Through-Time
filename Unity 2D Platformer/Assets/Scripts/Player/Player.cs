@@ -28,6 +28,9 @@ public class Player : MonoBehaviour {
 	float coyoteTimeJumpTimer;
 	float jumpBufferTimer;
 
+	// Spring
+	bool springJump;
+
 	// Wallsliding
 	public Vector2 wallJumpClimb;
 	public Vector2 wallJumpOff;
@@ -56,9 +59,11 @@ public class Player : MonoBehaviour {
 		CheckWallSliding();
 		CheckJumpBuffer();
 
+		springJump = false;
+
 		controller.Move (velocity * Time.deltaTime, input);
 
-		if (controller.collisions.above || controller.collisions.below && !controller.collisions.slidingDownSlope)
+		if (controller.collisions.above || (controller.collisions.below && !controller.collisions.slidingDownSlope && !springJump))
 			velocity.y = 0;
 	}
 
@@ -168,6 +173,7 @@ public class Player : MonoBehaviour {
 	public void OnSpringPlatform(Vector3 springVelocity)
 	{
 		velocity += springVelocity;
+		springJump = true;
 	}
 
 	void HandleWallSlideJump()

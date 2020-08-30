@@ -7,7 +7,7 @@ public class RaycastController : MonoBehaviour {
 	public LayerMask collisionMask;
 
 	[HideInInspector]
-	public BoxCollider2D collider2D;
+	public BoxCollider2D boxCollider2D;
 	[HideInInspector]
 	public RaycastOrigins raycastOrigins;
 
@@ -23,9 +23,9 @@ public class RaycastController : MonoBehaviour {
 
 	// Needs to be awake because it is called before start, eliminates errors with Camera Controller
 	public virtual void Awake() {
-		collider2D = GetComponent<BoxCollider2D> ();
+		boxCollider2D = GetComponent<BoxCollider2D> ();
 
-		if (collider2D == null)
+		if (boxCollider2D == null)
 			Debug.Log ("BoxCollider2D missing");
 	}
 
@@ -34,7 +34,7 @@ public class RaycastController : MonoBehaviour {
 	}
 
 	public void UpdateRayCastOrigins() {
-		Bounds bounds = collider2D.bounds;
+		Bounds bounds = boxCollider2D.bounds;
 		bounds.Expand (skinWidth * -2);
 
 		raycastOrigins.botLeft = new Vector2 (bounds.min.x, bounds.min.y);
@@ -44,7 +44,7 @@ public class RaycastController : MonoBehaviour {
 	}
 
 	public void CalculateRaySpacing() {
-		Bounds bounds = collider2D.bounds;
+		Bounds bounds = boxCollider2D.bounds;
 		bounds.Expand (skinWidth * -2);
 
 		horizontalRayCount = Mathf.Clamp (horizontalRayCount, 2, int.MaxValue);
