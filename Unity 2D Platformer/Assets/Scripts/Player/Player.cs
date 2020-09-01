@@ -29,7 +29,7 @@ public class Player : MonoBehaviour {
 	float jumpBufferTimer;
 
 	// Spring
-	bool springJump;
+	bool springJump = false;
 
 	// Wallsliding
 	public Vector2 wallJumpClimb;
@@ -48,7 +48,7 @@ public class Player : MonoBehaviour {
 		// From Kinematic Equations
 		gravity = -(2 * maxJumpHeight) / Mathf.Pow (timeToJumpApex, 2);
 		maxJumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;
-		minJumpHeight = Mathf.Sqrt (2 * Mathf.Abs(gravity) * minJumpHeight);
+		minJumpVelocity = Mathf.Sqrt (2 * Mathf.Abs(gravity) * minJumpHeight);
 	}
 
 	void Update ()
@@ -59,12 +59,13 @@ public class Player : MonoBehaviour {
 		CheckWallSliding();
 		CheckJumpBuffer();
 
-		springJump = false;
-
 		controller.Move (velocity * Time.deltaTime, input);
 
-		if (controller.collisions.above || (controller.collisions.below && !controller.collisions.slidingDownSlope && !springJump))
+		if (controller.collisions.above || (controller.collisions.below && !controller.collisions.slidingDownSlope && !controller.collisions.onSpringPlatform))
+		{
 			velocity.y = 0;
+			springJump = false;
+		}
 	}
 
 	void CalculatePlayerVelocity()
@@ -107,11 +108,11 @@ public class Player : MonoBehaviour {
 
 	void CheckJumpBuffer()
 	{
-		if (controller.collisions.below)
+		if (controller.collisions.below && !controller.collisions.onSpringPlatform)
 		{
 			if (jumpBufferTimer > 0)
 			{
-				HandleGroundedJump();
+				HandleGroundedJump(true);
 				jumpBufferTimer = 0;
 			}
 		}
@@ -145,13 +146,13 @@ public class Player : MonoBehaviour {
 		{
 			HandleWallSlideJump();
 		}
-		else if (controller.collisions.below)
+		else if (controller.collisions.below && !controller.collisions.onSpringPlatform)
 		{
 			HandleGroundedJump();
 		}
 		else
 		{
-			if (coyoteTimeJumpTimer > 0)
+			if (coyoteTimeJumpTimer > 0 && !springJump)
 			{
 				HandleCoyoteTimeJump();
 			}
@@ -164,15 +165,24 @@ public class Player : MonoBehaviour {
 
 	public void OnJumpInputUp()
 	{
-		if (velocity.y > minJumpVelocity)
+		if (velocity.y > minJumpVelocity && !springJump)
 		{
 			velocity.y = minJumpVelocity;
 		}
 	}
 
-	public void OnSpringPlatform(Vector3 springVelocity)
+	public void OnSpringPlatform(float maxSpringVelocity, float minSpringVelocity)
 	{
-		velocity += springVelocity;
+		if (jumpBufferTimer > 0)
+		{
+			velocity.y = maxSpringVelocity;
+			jumpBufferTimer = 0;
+		}
+		else
+		{
+			velocity.y = minSpringVelocity;
+		}
+		
 		springJump = true;
 	}
 
@@ -197,7 +207,7 @@ public class Player : MonoBehaviour {
 		coyoteTimeJumpTimer = 0;
 	}
 
-	void HandleGroundedJump()
+	void HandleGroundedJump(bool bufferedJump = false)
 	{
 		if (controller.collisions.slidingDownSlope)
 		{
@@ -206,6 +216,13 @@ public class Player : MonoBehaviour {
 				velocity.y = maxJumpVelocity * controller.collisions.slopeNormal.y;
 				velocity.x = maxJumpVelocity * controller.collisions.slopeNormal.x;
 			}
+		}
+		else if (bufferedJump)
+		{
+			if (Input.GetKey(KeyCode.Space))
+				velocity.y = maxJumpVelocity;
+			else
+				velocity.y = minJumpVelocity;
 		}
 		else
 		{

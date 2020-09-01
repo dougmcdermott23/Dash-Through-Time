@@ -22,9 +22,7 @@ public class Platform : RaycastController
 
 	MovingPlatform movingPlatform;
 	FallingPlatform fallingPlatform;
-
-	public bool springPlatform = false;
-	public Vector3 springVelocity;
+	SpringPlatform springPlatform;
 
 	struct PassengerMovement
 	{
@@ -48,6 +46,7 @@ public class Platform : RaycastController
 
 		movingPlatform = gameObject.GetComponent<MovingPlatform>();
 		fallingPlatform = gameObject.GetComponent<FallingPlatform>();
+		springPlatform = gameObject.GetComponent<SpringPlatform>();
 	}
 
 	void Update()
@@ -221,12 +220,20 @@ public class Platform : RaycastController
 				fallingPlatform.PassengerDetected();
 			}
 
-			if (springPlatform)
+			if (springPlatform != null && springPlatform.enabled)
 			{
 				PlayerInput playerInput = gameObject.GetComponent<PlayerInput>();
 				if (playerInput != null)
-					playerInput.SpringJump(springVelocity);
+					playerInput.SpringJump(springPlatform.maxJumpVelocity, springPlatform.minJumpVelocity);
 			}
 		}
+	}
+
+	public bool IsSpringPlatform()
+	{
+		if (springPlatform != null)
+			return true;
+		else
+			return false;
 	}
 }

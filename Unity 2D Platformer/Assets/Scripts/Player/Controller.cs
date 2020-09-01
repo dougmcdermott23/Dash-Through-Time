@@ -35,7 +35,7 @@ public class Controller : RaycastController
 		if (velocity.y != 0)
 			VerticalCollisions(ref velocity, input);
 
-		if (collisions.onPlatform)
+		if (collisions.platform != null)
 			collisions.platform.PlayerInteraction(transform.gameObject);
 
 		if (standingOnPlatform)
@@ -69,8 +69,8 @@ public class Controller : RaycastController
 				Platform platform = hit.transform.GetComponent<Platform>();
 				if (platform != null)
 				{
-					collisions.onPlatform = true;
 					collisions.platform = platform;
+					collisions.onSpringPlatform = collisions.platform.IsSpringPlatform();
 				}
 
 				float slopeAngle = Vector2.Angle(hit.normal, Vector2.up);
@@ -150,8 +150,8 @@ public class Controller : RaycastController
 				Platform platform = hit.transform.GetComponent<Platform>();
 				if (platform != null)
 				{
-					collisions.onPlatform = true;
 					collisions.platform = platform;
+					collisions.onSpringPlatform = collisions.platform.IsSpringPlatform();
 				}
 
 				// Collision detected, update variables and reset ray length to only detect other collisions that are closer
@@ -286,8 +286,8 @@ public class Controller : RaycastController
 		public int facingRight;
 
 		public bool fallingThroughPlatform;
-		public bool onPlatform;
 		public Platform platform;
+		public bool onSpringPlatform;
 
 		public bool climbingSlope;
 		public bool descendingSlope;
@@ -305,8 +305,8 @@ public class Controller : RaycastController
 			left = false;
 			right = false;
 
-			onPlatform = false;
 			platform = null;
+			onSpringPlatform = false;
 
 			climbingSlope = false;
 			descendingSlope = false;
