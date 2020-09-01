@@ -31,6 +31,6 @@ public class PlayerInput : MonoBehaviour
 
     public void SpringJump(float maxSpringVelocity, float minSpringVelocity)
     {
-        player.OnSpringPlatform(maxSpringVelocity, minSpringVelocity);
+        player.HandleSpringPlatform(maxSpringVelocity, minSpringVelocity);
     }
 }

@@ -29,7 +29,8 @@ public class Player : MonoBehaviour {
 	float jumpBufferTimer;
 
 	// Spring
-	bool springJump = false;
+	bool springJump;
+	bool onSpringPlatform;
 
 	// Wallsliding
 	public Vector2 wallJumpClimb;
@@ -61,7 +62,10 @@ public class Player : MonoBehaviour {
 
 		controller.Move (velocity * Time.deltaTime, input);
 
-		if (controller.collisions.above || (controller.collisions.below && !controller.collisions.slidingDownSlope && !controller.collisions.onSpringPlatform))
+		// Store if player is on a spring platform here because if the platform is moving the controller.collisions is reset
+		onSpringPlatform = controller.collisions.onSpringPlatform;
+
+		if (controller.collisions.above || (controller.collisions.below && !controller.collisions.slidingDownSlope && !onSpringPlatform))
 		{
 			velocity.y = 0;
 			springJump = false;
@@ -108,7 +112,7 @@ public class Player : MonoBehaviour {
 
 	void CheckJumpBuffer()
 	{
-		if (controller.collisions.below && !controller.collisions.onSpringPlatform)
+		if (controller.collisions.below && !onSpringPlatform)
 		{
 			if (jumpBufferTimer > 0)
 			{
@@ -146,7 +150,7 @@ public class Player : MonoBehaviour {
 		{
 			HandleWallSlideJump();
 		}
-		else if (controller.collisions.below && !controller.collisions.onSpringPlatform)
+		else if (controller.collisions.below && !onSpringPlatform)
 		{
 			HandleGroundedJump();
 		}
@@ -171,7 +175,7 @@ public class Player : MonoBehaviour {
 		}
 	}
 
-	public void OnSpringPlatform(float maxSpringVelocity, float minSpringVelocity)
+	public void HandleSpringPlatform(float maxSpringVelocity, float minSpringVelocity)
 	{
 		if (jumpBufferTimer > 0)
 		{

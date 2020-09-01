@@ -8,9 +8,9 @@ public class SpringPlatform : MonoBehaviour
     public float minJumpHeight = 3;
     public float timeToJumpApex = 0.4f;
 
-    //[HideInInspector]
+    [HideInInspector]
     public float maxJumpVelocity;
-    //[HideInInspector]
+    [HideInInspector]
     public float minJumpVelocity = 0;
     float gravity;
 
