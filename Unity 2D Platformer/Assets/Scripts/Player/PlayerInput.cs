@@ -15,6 +15,7 @@ public class PlayerInput : MonoBehaviour
 
     void Update()
     {
+        // Handle Player Movement
         Vector2 input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
         player.SetDirectionalInput(input);
 
@@ -26,6 +27,17 @@ public class PlayerInput : MonoBehaviour
         if (Input.GetKeyUp(KeyCode.Space))
         {
             player.OnJumpInputUp();
+        }
+
+        // Handle Time Rewind
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            player.StartRewind();
+        }
+
+        if (Input.GetKeyUp(KeyCode.R))
+        {
+            player.StopRewind();
         }
     }
 

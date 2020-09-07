@@ -42,6 +42,11 @@ public class Player : MonoBehaviour {
 	bool wallSliding;
 	int wallDirX;
 
+	// Rewind
+	List<PointInTime> pointsInTime;
+	public float maxRewindTime = 5;
+	bool isRewinding = false;
+
 	void Start()
 	{
 		controller = GetComponent<Controller>();
@@ -50,25 +55,36 @@ public class Player : MonoBehaviour {
 		gravity = -(2 * maxJumpHeight) / Mathf.Pow (timeToJumpApex, 2);
 		maxJumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;
 		minJumpVelocity = Mathf.Sqrt (2 * Mathf.Abs(gravity) * minJumpHeight);
+
+		pointsInTime = new List<PointInTime>();
 	}
 
 	void Update ()
 	{
-		CalculatePlayerVelocity();
-
-		CheckGroundControlTimers();
-		CheckWallSliding();
-		CheckJumpBuffer();
-
-		controller.Move (velocity * Time.deltaTime, input);
-
-		// Store if player is on a spring platform here because if the platform is moving the controller.collisions is reset
-		onSpringPlatform = controller.collisions.onSpringPlatform;
-
-		if (controller.collisions.above || (controller.collisions.below && !controller.collisions.slidingDownSlope && !onSpringPlatform))
+		if (isRewinding)
 		{
-			velocity.y = 0;
-			springJump = false;
+			Rewind();
+		}
+		else
+		{
+			CalculatePlayerVelocity();
+
+			CheckGroundControlTimers();
+			CheckWallSliding();
+			CheckJumpBuffer();
+
+			controller.Move(velocity * Time.deltaTime, input);
+
+			// Store if player is on a spring platform here because if the platform is moving the controller.collisions is reset
+			onSpringPlatform = controller.collisions.onSpringPlatform;
+
+			if (controller.collisions.above || (controller.collisions.below && !controller.collisions.slidingDownSlope && !onSpringPlatform))
+			{
+				velocity.y = 0;
+				springJump = false;
+			}
+
+			Record();
 		}
 	}
 
@@ -246,5 +262,41 @@ public class Player : MonoBehaviour {
 	void HandleBufferJump()
 	{
 		jumpBufferTimer = jumpBufferMaxTime;
+	}
+
+	public void StartRewind()
+	{
+		isRewinding = true;
+	}
+
+	public void StopRewind()
+	{
+		isRewinding = false;
+	}
+
+	void Rewind()
+	{
+		if (pointsInTime.Count > 0)
+		{
+			transform.position = pointsInTime[0].position;
+			velocity = pointsInTime[0].velocity;
+			pointsInTime.RemoveAt(0);
+		}
+		else
+		{
+			StopRewind();
+		}
+	}
+
+	void Record()
+	{
+		if (pointsInTime.Count > Mathf.Round(maxRewindTime / Time.fixedDeltaTime))
+		{
+			pointsInTime.RemoveAt(pointsInTime.Count - 1);
+		}
+
+		PointInTime pointInTime = new PointInTime(transform.position, velocity);
+
+		pointsInTime.Insert(0, pointInTime);
 	}
 }
