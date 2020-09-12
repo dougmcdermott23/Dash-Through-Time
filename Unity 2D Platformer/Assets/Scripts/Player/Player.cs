@@ -3,20 +3,24 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Controller))]
+[RequireComponent(typeof(TrailRenderer))]
 public class Player : MonoBehaviour {
 
 	Controller controller;
+	TrailRenderer trailRenderer;
 
 	Vector2 input;
 	Vector3 velocity;
 
 	// Ground movement
+	[Header("Ground Movement")]
 	public float moveSpeed = 6;
 	float velocityXSmoothing;
 	float accelerationTimeAirborne = 0.2f;
 	float accelerationTimeGrounded = 0.1f;
 
 	// Jumping
+	[Header("Jumping")]
 	public float maxJumpHeight = 4;
 	public float minJumpHeight = 1;
 	public float timeToJumpApex = 0.4f;
@@ -32,7 +36,8 @@ public class Player : MonoBehaviour {
 	bool springJump;
 	bool onSpringPlatform;
 
-	// Wallsliding
+	// Wall sliding
+	[Header("Wall Sliding")]
 	public Vector2 wallJumpClimb;
 	public Vector2 wallJumpOff;
 	public Vector2 wallJumpLeap;
@@ -43,20 +48,31 @@ public class Player : MonoBehaviour {
 	int wallDirX;
 
 	// Rewind
+	[Header("Rewind")]
+	public float maxRecordTime = 5;
+	public float maxRecordIntervalTime = 0.25f;
+	public float maxRewindTime = 0.5f;
 	List<PointInTime> pointsInTime;
-	public float maxRewindTime = 5;
+	float recordTime;
+	float recordIntervalTime;
+	float rewindTime;
+	bool isRewindInit = false;
 	bool isRewinding = false;
 
 	void Start()
 	{
 		controller = GetComponent<Controller>();
+		trailRenderer = GetComponent<TrailRenderer>();
+
+		// Initiate Rewind Variables 
+		trailRenderer.emitting = false;
+		trailRenderer.time = maxRecordTime + maxRewindTime;		// The trail should not start fading out before the player has finished the rewind
+		pointsInTime = new List<PointInTime>();
 
 		// From Kinematic Equations
 		gravity = -(2 * maxJumpHeight) / Mathf.Pow (timeToJumpApex, 2);
 		maxJumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;
 		minJumpVelocity = Mathf.Sqrt (2 * Mathf.Abs(gravity) * minJumpHeight);
-
-		pointsInTime = new List<PointInTime>();
 	}
 
 	void Update ()
@@ -84,7 +100,7 @@ public class Player : MonoBehaviour {
 				springJump = false;
 			}
 
-			Record();
+			CheckRecordTimer();
 		}
 	}
 
@@ -264,23 +280,80 @@ public class Player : MonoBehaviour {
 		jumpBufferTimer = jumpBufferMaxTime;
 	}
 
-	public void StartRewind()
+	public void InitiateRecordAndStartRewind()
 	{
-		isRewinding = true;
+		if (!isRewinding)
+		{
+			if (!isRewindInit)
+			{
+				InitiateRecord();
+			}
+			else
+			{
+				StartRewind();
+			}
+		}
 	}
 
-	public void StopRewind()
+	void InitiateRecord()
 	{
-		isRewinding = false;
+		isRewindInit = true;
+		recordTime = maxRecordTime;
+		recordIntervalTime = maxRecordIntervalTime;
+
+		trailRenderer.emitting = true;
+
+		pointsInTime.Clear();
+		PointInTime pointInTime = new PointInTime(transform.position);
+		pointsInTime.Insert(0, pointInTime);
+	}
+
+	void StartRewind()
+	{
+		isRewindInit = false;
+		isRewinding = true;
+		rewindTime = maxRewindTime;
+	}
+
+	void CheckRecordTimer()
+	{
+		if (isRewindInit)
+		{
+			if (recordTime > 0)
+			{
+				CheckRecordIntervalTimer();
+
+				recordTime -= Time.deltaTime;
+			}
+			else
+			{
+				StartRewind();
+			}
+		}
+	}
+
+	void CheckRecordIntervalTimer()
+	{
+
+		if (recordIntervalTime > 0)
+		{
+			recordIntervalTime -= Time.deltaTime;
+		}
+		else
+		{
+			recordIntervalTime = maxRecordIntervalTime;
+
+			PointInTime pointInTime = new PointInTime(transform.position);
+
+			pointsInTime.Insert(0, pointInTime);
+		}
 	}
 
 	void Rewind()
 	{
-		if (pointsInTime.Count > 0)
+		if (rewindTime > 0)
 		{
-			transform.position = pointsInTime[0].position;
-			velocity = pointsInTime[0].velocity;
-			pointsInTime.RemoveAt(0);
+			rewindTime -= Time.deltaTime;
 		}
 		else
 		{
@@ -288,15 +361,17 @@ public class Player : MonoBehaviour {
 		}
 	}
 
-	void Record()
+	void StopRewind()
 	{
-		if (pointsInTime.Count > Mathf.Round(maxRewindTime / Time.fixedDeltaTime))
-		{
-			pointsInTime.RemoveAt(pointsInTime.Count - 1);
-		}
+		isRewindInit = false;
+		isRewinding = false;
 
-		PointInTime pointInTime = new PointInTime(transform.position, velocity);
+		trailRenderer.emitting = false;
+		trailRenderer.Clear();
 
-		pointsInTime.Insert(0, pointInTime);
+		transform.position = pointsInTime[pointsInTime.Count - 1].position;
+		velocity = Vector3.zero;
+
+		pointsInTime.Clear();
 	}
 }

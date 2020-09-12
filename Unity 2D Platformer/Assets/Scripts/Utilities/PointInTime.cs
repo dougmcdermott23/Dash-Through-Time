@@ -4,12 +4,12 @@ using UnityEngine;
 
 public class PointInTime
 {
-	public Vector3 position;
-	public Vector3 velocity;
+	// In the future, sprite animations will also be stored here so they will appear in the rewind animation
 
-	public PointInTime(Vector3 _position, Vector3 _velocity)
+	public Vector3 position;
+
+	public PointInTime(Vector3 _position)
 	{
 		position = _position;
-		velocity = _velocity;
 	}
 }
