@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Controller))]
-[RequireComponent(typeof(TrailRenderer))]
 public class Player : MonoBehaviour {
 
 	Controller controller;
-	TrailRenderer trailRenderer;
+
+	PlayerAnimations playerAnimations;
 
 	Vector2 input;
 	Vector3 velocity;
@@ -62,11 +62,17 @@ public class Player : MonoBehaviour {
 	void Start()
 	{
 		controller = GetComponent<Controller>();
-		trailRenderer = GetComponent<TrailRenderer>();
 
-		// Initiate Rewind Variables 
-		trailRenderer.emitting = false;
-		trailRenderer.time = maxRecordTime + maxRewindTime;		// The trail should not start fading out before the player has finished the rewind
+		playerAnimations = gameObject.GetComponentInChildren<PlayerAnimations>();
+		if (playerAnimations)
+		{
+			playerAnimations.InitiateTrailRenderer(maxRecordTime + maxRewindTime);
+		}
+		else
+		{
+			Debug.LogError("Child object is missing PlayerAnimations script!");
+		}
+
 		pointsInTime = new List<PointInTime>();
 
 		// From Kinematic Equations
@@ -83,6 +89,7 @@ public class Player : MonoBehaviour {
 		}
 		else
 		{
+			playerAnimations.RotateInDirectionOfMovement(input);
 			CalculatePlayerVelocity();
 
 			CheckGroundControlTimers();
@@ -102,6 +109,9 @@ public class Player : MonoBehaviour {
 
 			CheckRecordTimer();
 		}
+
+		playerAnimations.SetAnimationParameters();
+		playerAnimations.Reset();
 	}
 
 	void CalculatePlayerVelocity()
@@ -212,6 +222,9 @@ public class Player : MonoBehaviour {
 		if (jumpBufferTimer > 0)
 		{
 			velocity.y = maxSpringVelocity;
+
+			playerAnimations.jump = true;
+
 			jumpBufferTimer = 0;
 		}
 		else
@@ -240,6 +253,8 @@ public class Player : MonoBehaviour {
 			velocity.y = wallJumpLeap.y;
 		}
 
+		playerAnimations.jump = true;
+
 		coyoteTimeJumpTimer = 0;
 	}
 
@@ -251,18 +266,24 @@ public class Player : MonoBehaviour {
 			{
 				velocity.y = maxJumpVelocity * controller.collisions.slopeNormal.y;
 				velocity.x = maxJumpVelocity * controller.collisions.slopeNormal.x;
+
+				playerAnimations.jump = true;
 			}
 		}
 		else if (bufferedJump)
 		{
-			if (Input.GetKey(KeyCode.Space))
+  			if (Input.GetKey(KeyCode.Space))
 				velocity.y = maxJumpVelocity;
 			else
 				velocity.y = minJumpVelocity;
+
+			playerAnimations.jump = true;
 		}
 		else
 		{
 			velocity.y = maxJumpVelocity;
+
+			playerAnimations.jump = true;
 		}
 
 		coyoteTimeJumpTimer = 0;
@@ -271,6 +292,8 @@ public class Player : MonoBehaviour {
 	void HandleCoyoteTimeJump()
 	{
 		velocity.y = maxJumpVelocity;
+
+		playerAnimations.jump = true;
 
 		coyoteTimeJumpTimer = 0;
 	}
@@ -301,10 +324,10 @@ public class Player : MonoBehaviour {
 		recordTime = maxRecordTime;
 		recordIntervalTime = maxRecordIntervalTime;
 
-		trailRenderer.emitting = true;
+		playerAnimations.SetTrailRendererEmitting(true);
 
 		pointsInTime.Clear();
-		PointInTime pointInTime = new PointInTime(transform.position);
+		PointInTime pointInTime = new PointInTime(transform.position, playerAnimations.transform.localRotation, playerAnimations.transform.localScale);
 		pointsInTime.Insert(0, pointInTime);
 	}
 
@@ -343,7 +366,7 @@ public class Player : MonoBehaviour {
 		{
 			recordIntervalTime = maxRecordIntervalTime;
 
-			PointInTime pointInTime = new PointInTime(transform.position);
+			PointInTime pointInTime = new PointInTime(transform.position, playerAnimations.transform.localRotation, playerAnimations.transform.localScale);
 
 			pointsInTime.Insert(0, pointInTime);
 		}
@@ -366,8 +389,7 @@ public class Player : MonoBehaviour {
 		isRewindInit = false;
 		isRewinding = false;
 
-		trailRenderer.emitting = false;
-		trailRenderer.Clear();
+		playerAnimations.SetTrailRendererEmitting(false);
 
 		transform.position = pointsInTime[pointsInTime.Count - 1].position;
 		velocity = Vector3.zero;
