@@ -6,6 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(Animator))]
 public class PlayerAnimations : MonoBehaviour
 {
+    SpriteRenderer sprite;
     TrailRenderer trail;
     Animator animator;
 
@@ -17,6 +18,7 @@ public class PlayerAnimations : MonoBehaviour
 
     private void Start()
     {
+        sprite = GetComponent<SpriteRenderer>();
         trail = GetComponent<TrailRenderer>();
         animator = GetComponent<Animator>();
 
@@ -31,6 +33,11 @@ public class PlayerAnimations : MonoBehaviour
     public void SetAnimationParameters()
     {
         animator.SetBool("Jump", jump);
+    }
+
+    public void SetSpriteEnabled(bool enabled)
+    {
+        sprite.enabled = enabled;
     }
 
     public void InitiateTrailRenderer(float trailTime)
