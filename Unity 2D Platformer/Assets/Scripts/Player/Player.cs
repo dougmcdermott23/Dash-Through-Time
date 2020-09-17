@@ -50,18 +50,13 @@ public class Player : MonoBehaviour {
 	// Rewind
 	[Header("Rewind")]
 	public GameObject playerGhostPreFab;
+	GameObject playerRewindGhost;
 	public float maxRecordTime = 5;
 	public float minRecordTime = 1;
 	public float maxRecordIntervalTime = 0.25f;
 	public float maxRewindTime = 0.5f;
-	float maxGhostInstantiateInterval;
 	List<PointInTime> pointsInTime;
-	List<GameObject> playerRewindGhosts;
-	float recordTime;
-	float recordIntervalTime;
 	float rewindTime;
-	float ghostInstantiateInterval;
-	bool isRewindInit = false;
 	bool isRewinding = false;
 
 	void Start()
@@ -71,7 +66,7 @@ public class Player : MonoBehaviour {
 		playerAnimations = gameObject.GetComponentInChildren<PlayerAnimations>();
 		if (playerAnimations)
 		{
-			playerAnimations.InitiateTrailRenderer(maxRecordTime + maxRewindTime);
+			playerAnimations.InitiateTrailRenderer(maxRecordTime);
 		}
 		else
 		{
@@ -79,7 +74,6 @@ public class Player : MonoBehaviour {
 		}
 
 		pointsInTime = new List<PointInTime>();
-		playerRewindGhosts = new List<GameObject>();
 
 		// From Kinematic Equations
 		gravity = -(2 * maxJumpHeight) / Mathf.Pow (timeToJumpApex, 2);
@@ -95,6 +89,8 @@ public class Player : MonoBehaviour {
 		}
 		else
 		{
+			controller.IsPlayerInObstacle();
+
 			playerAnimations.RotateInDirectionOfMovement(input);
 			CalculatePlayerVelocity();
 
@@ -113,7 +109,7 @@ public class Player : MonoBehaviour {
 				springJump = false;
 			}
 
-			CheckRecordTimer();
+			Record();
 		}
 
 		playerAnimations.SetAnimationParameters();
@@ -309,98 +305,43 @@ public class Player : MonoBehaviour {
 		jumpBufferTimer = jumpBufferMaxTime;
 	}
 
-	public void InitiateRecordAndStartRewind()
+	public void StartRewind()
 	{
 		if (!isRewinding)
 		{
-			if (!isRewindInit)
-			{
-				InitiateRecord();
-			}
-			else if (maxRecordTime - recordTime > minRecordTime)
-			{
-				StartRewind();
-			}
+			isRewinding = true;
+			rewindTime = maxRewindTime;
+
+			playerAnimations.SetSpriteEnabled(false);
+			playerAnimations.SetTrailRendererEmitting(false);
 		}
 	}
 
-	void InitiateRecord()
+	void Record()
 	{
-		isRewindInit = true;
-		recordTime = maxRecordTime;
-		recordIntervalTime = maxRecordIntervalTime;
+		bool removedPointFromList = false;
 
-		playerAnimations.SetTrailRendererEmitting(true);
+		if (pointsInTime.Count > Mathf.Round(maxRecordTime / Time.deltaTime))
+		{
+			pointsInTime.RemoveAt(pointsInTime.Count - 1);
 
-		pointsInTime.Clear();
+			removedPointFromList = true;
+		}
+
 		PointInTime pointInTime = new PointInTime(transform.position, playerAnimations.transform.localRotation, playerAnimations.transform.localScale);
+
 		pointsInTime.Insert(0, pointInTime);
 
-		InstantiateRewindGhost(pointInTime);
-	}
-
-	void StartRewind()
-	{
-		isRewindInit = false;
-		isRewinding = true;
-		rewindTime = maxRewindTime;
-
-		maxGhostInstantiateInterval = maxRewindTime / pointsInTime.Count;
-		playerAnimations.SetSpriteEnabled(false);
-	}
-
-	void CheckRecordTimer()
-	{
-		if (isRewindInit)
-		{
-			if (recordTime > 0)
-			{
-				CheckRecordIntervalTimer();
-
-				recordTime -= Time.deltaTime;
-			}
-			else
-			{
-				StartRewind();
-			}
-		}
-	}
-
-	void CheckRecordIntervalTimer()
-	{
-
-		if (recordIntervalTime > 0)
-		{
-			recordIntervalTime -= Time.deltaTime;
-		}
-		else
-		{
-			recordIntervalTime = maxRecordIntervalTime;
-
-			PointInTime pointInTime = new PointInTime(transform.position, playerAnimations.transform.localRotation, playerAnimations.transform.localScale);
-
-			pointsInTime.Insert(0, pointInTime);
-		}
+		if (!playerRewindGhost)
+			playerRewindGhost = InstantiateRewindGhost(pointsInTime[pointsInTime.Count - 1]);
+		else if (removedPointFromList)
+			UpdateRewindGhost(pointsInTime[pointsInTime.Count - 1]);
 	}
 
 	void Rewind()
 	{
 		if (rewindTime > 0)
 		{
-			if (ghostInstantiateInterval > 0)
-			{
-				ghostInstantiateInterval -= Time.deltaTime;
-			}
-			else
-			{
-				if (pointsInTime.Count > 1)
-				{
-					InstantiateRewindGhost(pointsInTime[0]);
-					pointsInTime.RemoveAt(0);
-					ghostInstantiateInterval = maxGhostInstantiateInterval;
-				}
-			}
-
 			rewindTime -= Time.deltaTime;
 		}
 		else
@@ -411,33 +352,32 @@ public class Player : MonoBehaviour {
 
 	void StopRewind()
 	{
-		isRewindInit = false;
 		isRewinding = false;
-
-		playerAnimations.SetSpriteEnabled(true);
-		playerAnimations.SetTrailRendererEmitting(false);
 
 		transform.position = pointsInTime[pointsInTime.Count - 1].position;
 		velocity = Vector3.zero;
 
 		pointsInTime.Clear();
-		DestroyRewindGhosts();
+
+		Destroy(playerRewindGhost);
+
+		playerAnimations.SetSpriteEnabled(true);
+		playerAnimations.SetTrailRendererEmitting(true);
+		playerAnimations.ResetTrailRenderer();
 	}
 
-	void InstantiateRewindGhost(PointInTime point)
+	GameObject InstantiateRewindGhost(PointInTime point)
 	{
 		GameObject ghost = Instantiate(playerGhostPreFab, point.position + new Vector3(0, 0.5f, 0), point.rotation);    // Need to shift the ghost by 0.5 in y dir to match the sprite shift as result from collider 2D shift
 		ghost.transform.localScale = point.scale;
-		playerRewindGhosts.Add(ghost);
+
+		return ghost;
 	}
 
-	void DestroyRewindGhosts()
+	void UpdateRewindGhost(PointInTime point)
 	{
-		foreach (GameObject ghost in playerRewindGhosts)
-		{
-			Destroy(ghost);
-		}
-
-		playerRewindGhosts.Clear();
+		playerRewindGhost.transform.position = point.position + new Vector3(0, 0.5f, 0); // Need to shift the ghost by 0.5 in y dir to match the sprite shift as result from collider 2D shift
+		playerRewindGhost.transform.rotation = point.rotation;
+		playerRewindGhost.transform.localScale = point.scale;
 	}
 }

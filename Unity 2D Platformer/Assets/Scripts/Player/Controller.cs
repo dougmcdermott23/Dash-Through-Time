@@ -279,6 +279,13 @@ public class Controller : RaycastController
 		collisions.fallingThroughPlatform = false;
 	}
 
+	public void IsPlayerInObstacle()
+	{
+		UpdateRayCastOrigins();
+
+		Debug.Log(Physics2D.OverlapBox(raycastOrigins.center, raycastOrigins.size, 0, collisionMask));
+	}
+
 	public struct CollisionInfo
 	{
 		public bool above, below;

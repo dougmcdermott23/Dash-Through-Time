@@ -32,7 +32,7 @@ public class PlayerInput : MonoBehaviour
         // Handle Time Rewind
         if (Input.GetKeyDown(KeyCode.E))
         {
-            player.InitiateRecordAndStartRewind();
+            player.StartRewind();
         }
     }
 

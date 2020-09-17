@@ -560,7 +560,7 @@ MonoBehaviour:
   wallStickTime: 0.25
   playerGhostPreFab: {fileID: 6921030977526914584, guid: 934838485842e0a48a43a49f3c5297d6,
     type: 3}
-  maxRecordTime: 5
+  maxRecordTime: 2
   minRecordTime: 1
   maxRecordIntervalTime: 0.5
   maxRewindTime: 0.25
@@ -744,7 +744,7 @@ GameObject:
   - component: {fileID: 1098768355}
   - component: {fileID: 1098768357}
   m_Layer: 9
-  m_Name: Obstacle (9)
+  m_Name: Platform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -829,7 +829,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1098768350}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.7400017, y: -3.8000002, z: -0.09765625}
+  m_LocalPosition: {x: 1.67, y: -5.57, z: -0.09765625}
   m_LocalScale: {x: 5.4825, y: 0.76916003, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -887,12 +887,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 32b9aebf31445f842a3289c9a7b28d77, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 2
-  waitTime: 0
+  speed: 5
+  waitTime: 1
   easeAmount: 0
   localWaypoints:
   - {x: 0, y: 0, z: 0}
-  - {x: 3, y: 0, z: 0}
+  - {x: 5, y: 0, z: 0}
   isCyclic: 0
 --- !u!1 &1645369138
 GameObject:
@@ -966,8 +966,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1645369138}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.531, y: -7.3994, z: -0.09765625}
-  m_LocalScale: {x: 21.304688, y: 1.64, z: 1}
+  m_LocalPosition: {x: 0.873, y: -7.3994, z: -0.09765625}
+  m_LocalScale: {x: 26.64294, y: 1.64, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0

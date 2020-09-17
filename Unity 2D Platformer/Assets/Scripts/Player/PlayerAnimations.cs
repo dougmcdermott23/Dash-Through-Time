@@ -42,14 +42,18 @@ public class PlayerAnimations : MonoBehaviour
 
     public void InitiateTrailRenderer(float trailTime)
     {
-        trail.emitting = false;
+        SetTrailRendererEmitting(true);
         trail.time = trailTime;		// The trail should not start fading out before the player has finished the rewind
+    }
+
+    public void ResetTrailRenderer()
+    {
+        trail.Clear();
     }
 
     public void SetTrailRendererEmitting(bool emitting)
     {
         trail.emitting = emitting;
-        trail.Clear();
     }
 
     public void RotateInDirectionOfMovement(Vector2 input)
