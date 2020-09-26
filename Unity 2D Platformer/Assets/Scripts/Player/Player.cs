@@ -51,9 +51,11 @@ public class Player : MonoBehaviour {
 	// Dash
 	[Header("Dash")]
 	public float maxDashDelayTime = 0.1f;
+	public float maxTimeBetweenDash = 0.1f;
 	public float dashDistance = 4;
 	public float maxDashTime = 0.1f;
 	float dashDelayTime;
+	float timeBetweenDash;
 	float dashTime;
 	float dashSpeed;
 	bool isDashing;
@@ -134,7 +136,32 @@ public class Player : MonoBehaviour {
 
 	void CalculatePlayerVelocity()
 	{
-		if (dashTime > 0)
+		if (isDashing)
+		{
+			HandlePlayerDash();
+		}
+		else
+		{
+			float targetVelocityX = input.x * moveSpeed;
+			velocity.x = Mathf.SmoothDamp(velocity.x, targetVelocityX, ref velocityXSmoothing, (controller.collisions.below) ? accelerationTimeGrounded : accelerationTimeAirborne);
+			velocity.y += gravity * Time.deltaTime;
+		}
+
+		if (input.x != 0)
+			facingRight = input.x > 0;
+	}
+
+	// There is a small delay between button press and player dash where the user can buffer a direction
+	// The player dashes in the set x direction for a set period
+	// On the first frame after the dash is complete, set player speed and timer between player dashes
+	void HandlePlayerDash()
+	{
+		if (dashDelayTime > 0)
+		{
+			velocity = Vector2.zero;
+			dashDelayTime -= Time.deltaTime;
+		}
+		else if (dashTime > 0)
 		{
 			float direction = facingRight ? 1 : -1;
 
@@ -143,7 +170,7 @@ public class Player : MonoBehaviour {
 
 			dashTime -= Time.deltaTime;
 		}
-		else if (isDashing)
+		else
 		{
 			// Player has finished dashing, reset velocity and set delay timer
 			float direction = facingRight ? 1 : -1;
@@ -151,18 +178,9 @@ public class Player : MonoBehaviour {
 			velocity.x = direction * moveSpeed;
 			velocity.y = 0;
 
-			dashDelayTime = maxDashDelayTime;
+			timeBetweenDash = maxTimeBetweenDash;
 
 			isDashing = false;
-		}
-		else
-		{
-			float targetVelocityX = input.x * moveSpeed;
-			velocity.x = Mathf.SmoothDamp(velocity.x, targetVelocityX, ref velocityXSmoothing, (controller.collisions.below) ? accelerationTimeGrounded : accelerationTimeAirborne);
-			velocity.y += gravity * Time.deltaTime;
-
-			if (input.x != 0)
-				facingRight = input.x > 0;
 		}
 	}
 
@@ -234,7 +252,7 @@ public class Player : MonoBehaviour {
 
 		if (!isDashing)
 		{
-			dashDelayTime -= Time.deltaTime;
+			timeBetweenDash -= Time.deltaTime;
 		}
 	}
 
@@ -275,13 +293,14 @@ public class Player : MonoBehaviour {
 		}
 	}
 
+	// Player cannot dash if already dashing
+	// Player regains ability to dash when grounded
+	// There is a small delay between the player being able to dash
 	public void OnDashInputDown()
 	{
-		// Player cannot dash if already dashing
-		// Player regains ability to dash when grounded
-		// There is a small delay between the player being able to dash
-		if (!isDashing && canDash && dashDelayTime < 0)
+		if (!isDashing && canDash && timeBetweenDash < 0)
 		{
+			dashDelayTime = maxDashDelayTime;
 			dashTime = maxDashTime;
 			isDashing = true;
 			canDash = false;
