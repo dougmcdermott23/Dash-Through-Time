@@ -558,6 +558,9 @@ MonoBehaviour:
   wallJumpLeap: {x: 10, y: 20}
   wallSlideSpeedMax: 3
   wallStickTime: 0.25
+  maxDashDelayTime: 0.1
+  dashDistance: 4
+  maxDashTime: 0.1
   playerGhostPreFab: {fileID: 6921030977526914584, guid: 934838485842e0a48a43a49f3c5297d6,
     type: 3}
   maxRecordTime: 2

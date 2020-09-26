@@ -29,8 +29,13 @@ public class PlayerInput : MonoBehaviour
             player.OnJumpInputUp();
         }
 
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            player.OnDashInputDown();
+        }
+
         // Handle Time Rewind
-        if (Input.GetKeyDown(KeyCode.E))
+        if (Input.GetKeyDown(KeyCode.X))
         {
             player.StartRewind();
         }

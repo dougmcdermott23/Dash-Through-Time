@@ -18,6 +18,7 @@ public class Player : MonoBehaviour {
 	float velocityXSmoothing;
 	float accelerationTimeAirborne = 0.2f;
 	float accelerationTimeGrounded = 0.1f;
+	bool facingRight = true;
 
 	// Jumping
 	[Header("Jumping")]
@@ -46,6 +47,17 @@ public class Player : MonoBehaviour {
 	float timeToWallUnstick;
 	bool wallSliding;
 	int wallDirX;
+
+	// Dash
+	[Header("Dash")]
+	public float maxDashDelayTime = 0.1f;
+	public float dashDistance = 4;
+	public float maxDashTime = 0.1f;
+	float dashDelayTime;
+	float dashTime;
+	float dashSpeed;
+	bool isDashing;
+	bool canDash;
 
 	// Rewind
 	[Header("Rewind")]
@@ -79,6 +91,9 @@ public class Player : MonoBehaviour {
 		gravity = -(2 * maxJumpHeight) / Mathf.Pow (timeToJumpApex, 2);
 		maxJumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;
 		minJumpVelocity = Mathf.Sqrt (2 * Mathf.Abs(gravity) * minJumpHeight);
+
+		// Calculate dash speed
+		dashSpeed = dashDistance / maxDashTime;
 	}
 
 	void Update ()
@@ -94,6 +109,7 @@ public class Player : MonoBehaviour {
 			playerAnimations.RotateInDirectionOfMovement(input);
 			CalculatePlayerVelocity();
 
+			CheckDashSettings();
 			CheckGroundControlTimers();
 			CheckWallSliding();
 			CheckJumpBuffer();
@@ -118,9 +134,36 @@ public class Player : MonoBehaviour {
 
 	void CalculatePlayerVelocity()
 	{
-		float targetVelocityX = input.x * moveSpeed;
-		velocity.x = Mathf.SmoothDamp(velocity.x, targetVelocityX, ref velocityXSmoothing, (controller.collisions.below) ? accelerationTimeGrounded : accelerationTimeAirborne);
-		velocity.y += gravity * Time.deltaTime;
+		if (dashTime > 0)
+		{
+			float direction = facingRight ? 1 : -1;
+
+			velocity.x = direction * dashSpeed;
+			velocity.y = 0;
+
+			dashTime -= Time.deltaTime;
+		}
+		else if (isDashing)
+		{
+			// Player has finished dashing, reset velocity and set delay timer
+			float direction = facingRight ? 1 : -1;
+
+			velocity.x = direction * moveSpeed;
+			velocity.y = 0;
+
+			dashDelayTime = maxDashDelayTime;
+
+			isDashing = false;
+		}
+		else
+		{
+			float targetVelocityX = input.x * moveSpeed;
+			velocity.x = Mathf.SmoothDamp(velocity.x, targetVelocityX, ref velocityXSmoothing, (controller.collisions.below) ? accelerationTimeGrounded : accelerationTimeAirborne);
+			velocity.y += gravity * Time.deltaTime;
+
+			if (input.x != 0)
+				facingRight = input.x > 0;
+		}
 	}
 
 	// Handle player sliding against a vertical wall
@@ -182,6 +225,19 @@ public class Player : MonoBehaviour {
 		}
 	}
 
+	void CheckDashSettings()
+	{
+		if (controller.collisions.below)
+		{
+			canDash = true;
+		}
+
+		if (!isDashing)
+		{
+			dashDelayTime -= Time.deltaTime;
+		}
+	}
+
 	public void SetDirectionalInput(Vector2 directionInput)
 	{
 		input = directionInput;
@@ -216,6 +272,19 @@ public class Player : MonoBehaviour {
 		if (velocity.y > minJumpVelocity && !springJump)
 		{
 			velocity.y = minJumpVelocity;
+		}
+	}
+
+	public void OnDashInputDown()
+	{
+		// Player cannot dash if already dashing
+		// Player regains ability to dash when grounded
+		// There is a small delay between the player being able to dash
+		if (!isDashing && canDash && dashDelayTime < 0)
+		{
+			dashTime = maxDashTime;
+			isDashing = true;
+			canDash = false;
 		}
 	}
 
