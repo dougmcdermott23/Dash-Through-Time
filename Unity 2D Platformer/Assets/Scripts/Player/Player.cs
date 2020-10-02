@@ -106,8 +106,6 @@ public class Player : MonoBehaviour {
 		}
 		else
 		{
-			controller.IsPlayerInObstacle();
-
 			playerAnimations.RotateInDirectionOfMovement(input);
 			CalculatePlayerVelocity();
 
