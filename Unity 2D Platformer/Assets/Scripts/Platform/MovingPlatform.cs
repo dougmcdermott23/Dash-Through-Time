@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Platform))]
 public class MovingPlatform : MonoBehaviour
 {
 	public float speed;
@@ -22,6 +23,13 @@ public class MovingPlatform : MonoBehaviour
 		globalWaypoints = new Vector3[localWaypoints.Length];
 		for (int i = 0; i < localWaypoints.Length; i++)
 			globalWaypoints[i] = localWaypoints[i] + transform.position;
+	}
+
+	public void OnLevelReset()
+	{
+		nextMoveTime = 0;
+		fromWaypointIndex = 0;
+		percentBetweenWaypoints = 0;
 	}
 
 	// Function to create a gradual increase and decrease in speed from waypoints

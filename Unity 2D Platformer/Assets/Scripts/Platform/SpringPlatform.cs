@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Platform))]
 public class SpringPlatform : MonoBehaviour
 {
     public float maxJumpHeight = 8;

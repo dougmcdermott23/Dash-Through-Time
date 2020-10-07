@@ -24,6 +24,8 @@ public class Platform : RaycastController
 	FallingPlatform fallingPlatform;
 	SpringPlatform springPlatform;
 
+	Vector3 platformStartPosition;
+
 	struct PassengerMovement
 	{
 		public Transform transform;
@@ -44,9 +46,14 @@ public class Platform : RaycastController
     {
         base.Start();
 
+		platformStartPosition = transform.position;
+
 		movingPlatform = gameObject.GetComponent<MovingPlatform>();
 		fallingPlatform = gameObject.GetComponent<FallingPlatform>();
 		springPlatform = gameObject.GetComponent<SpringPlatform>();
+
+		if (movingPlatform != null && fallingPlatform != null)
+			Debug.LogError("The moving platform controller and falling platform controller are not compatible!");
 	}
 
 	void Update()
@@ -67,6 +74,17 @@ public class Platform : RaycastController
 		MovePassengers(true);
 		transform.Translate(velocity);
 		MovePassengers(false);
+	}
+
+	public void OnLevelReset()
+	{
+		transform.position = platformStartPosition;
+
+		if (movingPlatform != null && movingPlatform.enabled)
+			movingPlatform.OnLevelReset();
+
+		if (fallingPlatform != null && fallingPlatform.enabled)
+			fallingPlatform.OnLevelReset();
 	}
 
 	void CalculatePassengerMovement(Vector3 velocity)

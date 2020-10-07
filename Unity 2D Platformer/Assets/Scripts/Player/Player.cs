@@ -59,6 +59,7 @@ public class Player : MonoBehaviour {
 	float dashTime;
 	float dashSpeed;
 	bool isDashing;
+	bool isDelayedDashing;
 	bool canDash;
 
 	// Rewind
@@ -72,6 +73,11 @@ public class Player : MonoBehaviour {
 	List<PointInTime> pointsInTime;
 	float rewindTime;
 	bool isRewinding = false;
+
+	// Level Transition
+	[Header("Level Transition")]
+	public float levelTransitionTime = 0.5f;
+	[SerializeField] bool pausePlayerControl;
 
 	void Start()
 	{
@@ -100,6 +106,9 @@ public class Player : MonoBehaviour {
 
 	void Update ()
 	{
+		if (pausePlayerControl)
+			return;
+
 		if (isRewinding)
 		{
 			Rewind();
@@ -132,11 +141,39 @@ public class Player : MonoBehaviour {
 		playerAnimations.Reset();
 	}
 
+	public void OnLevelReset(bool playerDied, Vector3[] playerSpawnLocations)
+	{
+		StartCoroutine(PlayerContolPause(levelTransitionTime));
+
+		velocity = Vector2.zero;
+
+		int minIndex = 0;
+		float minDistance = float.PositiveInfinity;
+
+		for (int i = 0; i < playerSpawnLocations.Length; i++)
+		{
+			float distance = Vector3.Distance(transform.position, playerSpawnLocations[i]);
+			if (distance < minDistance)
+			{
+				minIndex = i;
+				minDistance = distance;
+			}
+		}
+
+		transform.position = playerSpawnLocations[minIndex];
+
+		ResetRewind();
+	}
+
 	void CalculatePlayerVelocity()
 	{
+		bool setDir = true;
+
 		if (isDashing)
 		{
 			HandlePlayerDash();
+
+			setDir = isDelayedDashing;
 		}
 		else
 		{
@@ -145,7 +182,7 @@ public class Player : MonoBehaviour {
 			velocity.y += gravity * Time.deltaTime;
 		}
 
-		if (input.x != 0)
+		if (input.x != 0 && setDir)
 			facingRight = input.x > 0;
 	}
 
@@ -159,26 +196,31 @@ public class Player : MonoBehaviour {
 			velocity = Vector2.zero;
 			dashDelayTime -= Time.deltaTime;
 		}
-		else if (dashTime > 0)
-		{
-			float direction = facingRight ? 1 : -1;
-
-			velocity.x = direction * dashSpeed;
-			velocity.y = 0;
-
-			dashTime -= Time.deltaTime;
-		}
 		else
 		{
-			// Player has finished dashing, reset velocity and set delay timer
-			float direction = facingRight ? 1 : -1;
+			isDelayedDashing = false;
 
-			velocity.x = direction * moveSpeed;
-			velocity.y = 0;
+			if (dashTime > 0)
+			{
+				float direction = facingRight ? 1 : -1;
 
-			timeBetweenDash = maxTimeBetweenDash;
+				velocity.x = direction * dashSpeed;
+				velocity.y = 0;
 
-			isDashing = false;
+				dashTime -= Time.deltaTime;
+			}
+			else
+			{
+				// Player has finished dashing, reset velocity and set delay timer
+				float direction = facingRight ? 1 : -1;
+
+				velocity.x = direction * moveSpeed;
+				velocity.y = 0;
+
+				timeBetweenDash = maxTimeBetweenDash;
+
+				isDashing = false;
+			}
 		}
 	}
 
@@ -301,6 +343,7 @@ public class Player : MonoBehaviour {
 			dashDelayTime = maxDashDelayTime;
 			dashTime = maxDashTime;
 			isDashing = true;
+			isDelayedDashing = true;
 			canDash = false;
 		}
 	}
@@ -438,10 +481,15 @@ public class Player : MonoBehaviour {
 
 	void StopRewind()
 	{
-		isRewinding = false;
-
 		transform.position = pointsInTime[pointsInTime.Count - 1].position;
 		velocity = Vector3.zero;
+
+		ResetRewind();
+	}
+
+	void ResetRewind()
+	{
+		isRewinding = false;
 
 		pointsInTime.Clear();
 
@@ -465,5 +513,14 @@ public class Player : MonoBehaviour {
 		playerRewindGhost.transform.position = point.position + new Vector3(0, 0.5f, 0); // Need to shift the ghost by 0.5 in y dir to match the sprite shift as result from collider 2D shift
 		playerRewindGhost.transform.rotation = point.rotation;
 		playerRewindGhost.transform.localScale = point.scale;
+	}
+
+	IEnumerator PlayerContolPause(float time)
+	{
+		pausePlayerControl = true;
+
+		yield return new WaitForSeconds(time);
+
+		pausePlayerControl = false;
 	}
 }

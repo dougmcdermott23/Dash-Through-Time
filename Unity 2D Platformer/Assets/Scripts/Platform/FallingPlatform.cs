@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Platform))]
 public class FallingPlatform : MonoBehaviour
 {
 	Vector3 velocity;
@@ -9,12 +10,22 @@ public class FallingPlatform : MonoBehaviour
 	public float platformFallTime = 1;
 	public float gravity = 1;
 	float timeToPlatformFall;
+	float timeToPlatformDisable;
 	bool platformTriggered;
 
 	void Start()
 	{
 		platformTriggered = false;
 		velocity = Vector3.zero;
+	}
+
+	public void OnLevelReset()
+	{
+		velocity = Vector3.zero;
+		platformTriggered = false;
+		timeToPlatformFall = 0;
+		timeToPlatformDisable = 0;
+		gameObject.SetActive(true);
 	}
 
 	// Platform moves after something triggers it
@@ -31,6 +42,15 @@ public class FallingPlatform : MonoBehaviour
 			{
 				timeToPlatformFall -= Time.deltaTime;
 			}
+
+			if (timeToPlatformDisable <= 0)
+			{
+				gameObject.SetActive(false);
+			}
+			else
+			{
+				timeToPlatformDisable -= Time.deltaTime;
+			}
 		}
 
 		return velocity;
@@ -42,7 +62,7 @@ public class FallingPlatform : MonoBehaviour
 	{
 		if (!platformTriggered)
 		{
-			Destroy(gameObject, platformFallTime + delayBeforeFall);
+			timeToPlatformDisable = platformFallTime + delayBeforeFall;
 			timeToPlatformFall = delayBeforeFall;
 		}
 
