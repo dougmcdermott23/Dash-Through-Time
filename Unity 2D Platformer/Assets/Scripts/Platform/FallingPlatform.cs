@@ -5,51 +5,68 @@ using UnityEngine;
 [RequireComponent(typeof(Platform))]
 public class FallingPlatform : MonoBehaviour
 {
+	Vector3 platformStartPosition;
+
+	MeshRenderer meshRenderer;
+	int startLayer;
+
 	Vector3 velocity;
 	public float delayBeforeFall = 1;
 	public float platformFallTime = 1;
+	public float platformDisabledTime = 1;
 	public float gravity = 1;
-	float timeToPlatformFall;
-	float timeToPlatformDisable;
-	bool platformTriggered;
+	bool isPlatformTriggered;
+	bool isPlatformFalling;
+	bool isPlatformDisabled;
 
 	void Start()
 	{
-		platformTriggered = false;
+		platformStartPosition = transform.position;
+
+		meshRenderer = gameObject.GetComponent<MeshRenderer>();
+		startLayer = gameObject.layer;
+
+		isPlatformTriggered = false;
 		velocity = Vector3.zero;
 	}
 
 	public void OnLevelReset()
 	{
+		transform.position = platformStartPosition;
 		velocity = Vector3.zero;
-		platformTriggered = false;
-		timeToPlatformFall = 0;
-		timeToPlatformDisable = 0;
-		gameObject.SetActive(true);
+		isPlatformTriggered = false;
+		isPlatformFalling = false;
+		isPlatformDisabled = false;
+
+		meshRenderer.enabled = true;
+		gameObject.layer = startLayer;
 	}
 
 	// Platform moves after something triggers it
 	// There is a specified delay before the platform can move
 	public Vector3 CalculatePlatformMovement()
 	{
-		if (platformTriggered)
+		if (isPlatformTriggered)
 		{
-			if (timeToPlatformFall <= 0)
+			StartCoroutine(PlatformFall(delayBeforeFall));
+		}
+
+		if (isPlatformFalling)
+		{
+			StartCoroutine(SetPlatformEnabled(platformFallTime, false));
+			velocity.y -= gravity * Time.deltaTime;
+		}
+
+		// if platformDisabledTime > 0 set a timer to reset the platform, otherwise disable the gameObject
+		if (isPlatformDisabled)
+		{
+			if (platformDisabledTime > 0)
 			{
-				velocity.y -= gravity * Time.deltaTime;
+				StartCoroutine(SetPlatformEnabled(platformDisabledTime, true));
 			}
 			else
-			{
-				timeToPlatformFall -= Time.deltaTime;
-			}
-
-			if (timeToPlatformDisable <= 0)
 			{
 				gameObject.SetActive(false);
-			}
-			else
-			{
-				timeToPlatformDisable -= Time.deltaTime;
 			}
 		}
 
@@ -60,12 +77,30 @@ public class FallingPlatform : MonoBehaviour
 	// If passenger is detected, enable the platform trigger
 	public void PassengerDetected()
 	{
-		if (!platformTriggered)
+		isPlatformTriggered = true;
+	}
+
+	IEnumerator PlatformFall(float time)
+	{
+		yield return new WaitForSeconds(time);
+
+		isPlatformFalling = true;
+	}
+
+	IEnumerator SetPlatformEnabled(float time, bool enable)
+	{
+		yield return new WaitForSeconds(time);
+
+		if (enable)
 		{
-			timeToPlatformDisable = platformFallTime + delayBeforeFall;
-			timeToPlatformFall = delayBeforeFall;
+			OnLevelReset();
+		}
+		else
+		{
+			meshRenderer.enabled = false;
+			gameObject.layer = 0;
 		}
 
-		platformTriggered = true;
+		isPlatformDisabled = !enable;
 	}
 }
