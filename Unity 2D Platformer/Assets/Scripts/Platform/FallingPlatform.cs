@@ -30,8 +30,10 @@ public class FallingPlatform : MonoBehaviour
 		velocity = Vector3.zero;
 	}
 
-	public void OnLevelReset()
+	public void OnReset()
 	{
+		StopAllCoroutines();
+
 		transform.position = platformStartPosition;
 		velocity = Vector3.zero;
 		isPlatformTriggered = false;
@@ -93,7 +95,7 @@ public class FallingPlatform : MonoBehaviour
 
 		if (enable)
 		{
-			OnLevelReset();
+			OnReset();
 		}
 		else
 		{

@@ -25,7 +25,7 @@ public class MovingPlatform : MonoBehaviour
 			globalWaypoints[i] = localWaypoints[i] + transform.position;
 	}
 
-	public void OnLevelReset()
+	public void OnReset()
 	{
 		nextMoveTime = 0;
 		fromWaypointIndex = 0;

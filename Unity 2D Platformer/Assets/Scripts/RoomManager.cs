@@ -10,8 +10,11 @@ using UnityEngine;
 /// - Handling player death and spawing, as well as resetting the room after player death
 //////////////////////////////////////////////////////////////////////////////////////////
 
+[RequireComponent(typeof(BoxCollider2D))]
 public class RoomManager : MonoBehaviour
 {
+    BoxCollider2D boxCollider2D;
+
     Player player;
     Platform[] levelPlatforms;
 
@@ -20,6 +23,9 @@ public class RoomManager : MonoBehaviour
 
     private void Start()
     {
+        boxCollider2D = gameObject.GetComponent<BoxCollider2D>();
+        boxCollider2D.isTrigger = true;
+
         player = Object.FindObjectOfType<Player>();
         levelPlatforms = GetComponentsInChildren<Platform>(true);
 
@@ -27,21 +33,13 @@ public class RoomManager : MonoBehaviour
             Debug.LogError("Room requires at least one spawn location!");
     }
 
-    private void Update()
+    public void ResetLevel(bool isPlayerDead)
     {
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-
-        }
-    }
-
-    public void ResetLevel(bool playerDied)
-    {
-        player.OnLevelReset(false, playerSpawnLocations);
+        player.OnReset(isPlayerDead, playerSpawnLocations);
 
         foreach (Platform platform in levelPlatforms)
         {
-            platform.OnLevelReset();
+            platform.OnReset();
         }
     }
 

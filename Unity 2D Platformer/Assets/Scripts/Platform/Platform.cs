@@ -76,15 +76,15 @@ public class Platform : RaycastController
 		MovePassengers(false);
 	}
 
-	public void OnLevelReset()
+	public void OnReset()
 	{
 		transform.position = platformStartPosition;
 
 		if (movingPlatform != null && movingPlatform.enabled)
-			movingPlatform.OnLevelReset();
+			movingPlatform.OnReset();
 
 		if (fallingPlatform != null && fallingPlatform.enabled)
-			fallingPlatform.OnLevelReset();
+			fallingPlatform.OnReset();
 	}
 
 	void CalculatePassengerMovement(Vector3 velocity)

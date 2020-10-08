@@ -141,26 +141,30 @@ public class Player : MonoBehaviour {
 		playerAnimations.Reset();
 	}
 
-	public void OnLevelReset(bool playerDied, Vector3[] playerSpawnLocations)
+	public void OnReset(bool isPlayerDead, Vector3[] playerSpawnLocations)
 	{
-		StartCoroutine(PlayerContolPause(levelTransitionTime));
-
 		velocity = Vector2.zero;
 
-		int minIndex = 0;
-		float minDistance = float.PositiveInfinity;
+		int spawnIndex = 0;
 
-		for (int i = 0; i < playerSpawnLocations.Length; i++)
+		if (!isPlayerDead)
 		{
-			float distance = Vector3.Distance(transform.position, playerSpawnLocations[i]);
-			if (distance < minDistance)
+			StartCoroutine(PlayerContolPause(levelTransitionTime));
+
+			float minDistance = float.PositiveInfinity;
+
+			for (int i = 0; i < playerSpawnLocations.Length; i++)
 			{
-				minIndex = i;
-				minDistance = distance;
+				float distance = Vector3.Distance(transform.position, playerSpawnLocations[i]);
+				if (distance < minDistance)
+				{
+					spawnIndex = i;
+					minDistance = distance;
+				}
 			}
 		}
 
-		transform.position = playerSpawnLocations[minIndex];
+		transform.position = playerSpawnLocations[spawnIndex];
 
 		ResetRewind();
 	}
