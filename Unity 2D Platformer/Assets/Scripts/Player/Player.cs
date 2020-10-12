@@ -166,6 +166,7 @@ public class Player : MonoBehaviour {
 
 		transform.position = playerSpawnLocations[spawnIndex];
 
+		ResetDash();
 		ResetRewind();
 	}
 
@@ -298,6 +299,12 @@ public class Player : MonoBehaviour {
 		{
 			timeBetweenDash -= Time.deltaTime;
 		}
+	}
+
+	void ResetDash()
+	{
+		isDashing = false;
+		canDash = true;
 	}
 
 	public void SetDirectionalInput(Vector2 directionInput)
