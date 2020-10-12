@@ -27,11 +27,11 @@ public class Player : MonoBehaviour {
 	public float timeToJumpApex = 0.4f;
 	public float coytoteTimeJumpMaxTime = 0.1f;
 	public float jumpBufferMaxTime = 0.1f;
+	Timer coyoteTimeJumpTimer;
+	Timer jumpBufferTimer;
 	float maxJumpVelocity;
 	float minJumpVelocity = 0;
 	float gravity;
-	float coyoteTimeJumpTimer;
-	float jumpBufferTimer;
 
 	// Spring
 	bool springJump;
@@ -44,7 +44,7 @@ public class Player : MonoBehaviour {
 	public Vector2 wallJumpLeap;
 	public float wallSlideSpeedMax = 3;
 	public float wallStickTime = 0.1f;
-	float timeToWallUnstick;
+	Timer wallStickTimer;
 	bool wallSliding;
 	int wallDirX;
 
@@ -54,9 +54,9 @@ public class Player : MonoBehaviour {
 	public float maxTimeBetweenDash = 0.1f;
 	public float dashDistance = 4;
 	public float maxDashTime = 0.1f;
-	float dashDelayTime;
-	float timeBetweenDash;
-	float dashTime;
+	Timer dashDelayTimer;
+	Timer betweenDashTimer;
+	Timer dashTimer;
 	float dashSpeed;
 	bool isDashing;
 	bool isDelayedDashing;
@@ -70,8 +70,8 @@ public class Player : MonoBehaviour {
 	public float minRecordTime = 1;
 	public float maxRecordIntervalTime = 0.25f;
 	public float maxRewindTime = 0.5f;
+	Timer rewindTimer;
 	List<PointInTime> pointsInTime;
-	float rewindTime;
 	bool isRewinding = false;
 
 	// Level Transition
@@ -82,6 +82,14 @@ public class Player : MonoBehaviour {
 	void Start()
 	{
 		controller = GetComponent<Controller>();
+
+		coyoteTimeJumpTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
+		jumpBufferTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
+		wallStickTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
+		dashDelayTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
+		betweenDashTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
+		dashTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
+		rewindTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
 
 		playerAnimations = gameObject.GetComponentInChildren<PlayerAnimations>();
 		if (playerAnimations)
@@ -109,11 +117,7 @@ public class Player : MonoBehaviour {
 		if (pausePlayerControl)
 			return;
 
-		if (isRewinding)
-		{
-			Rewind();
-		}
-		else
+		if (!isRewinding)
 		{
 			playerAnimations.RotateInDirectionOfMovement(input);
 			CalculatePlayerVelocity();
@@ -196,23 +200,20 @@ public class Player : MonoBehaviour {
 	// On the first frame after the dash is complete, set player speed and timer between player dashes
 	void HandlePlayerDash()
 	{
-		if (dashDelayTime > 0)
+		if (!dashDelayTimer.IsTimerComplete())
 		{
 			velocity = Vector2.zero;
-			dashDelayTime -= Time.deltaTime;
 		}
 		else
 		{
 			isDelayedDashing = false;
 
-			if (dashTime > 0)
+			if (!dashTimer.IsTimerComplete())
 			{
 				float direction = facingRight ? 1 : -1;
 
 				velocity.x = direction * dashSpeed;
 				velocity.y = 0;
-
-				dashTime -= Time.deltaTime;
 			}
 			else
 			{
@@ -222,7 +223,7 @@ public class Player : MonoBehaviour {
 				velocity.x = direction * moveSpeed;
 				velocity.y = 0;
 
-				timeBetweenDash = maxTimeBetweenDash;
+				betweenDashTimer.SetTimer(maxTimeBetweenDash);
 
 				isDashing = false;
 			}
@@ -243,19 +244,17 @@ public class Player : MonoBehaviour {
 			if (velocity.y < -wallSlideSpeedMax)
 				velocity.y = -wallSlideSpeedMax;
 
-			if (timeToWallUnstick > 0)
+			if (!wallStickTimer.IsTimerComplete())
 			{
 				velocityXSmoothing = 0;
 				velocity.x = 0;
 
-				if (input.x != wallDirX && input.x != 0)
-					timeToWallUnstick -= Time.deltaTime;
-				else
-					timeToWallUnstick = wallStickTime;
+				if (input.x == wallDirX || input.x == 0)
+					wallStickTimer.SetTimer(wallStickTime);
 			}
 			else
 			{
-				timeToWallUnstick = wallStickTime;
+				wallStickTimer.SetTimer(wallStickTime);
 			}
 		}
 	}
@@ -264,15 +263,11 @@ public class Player : MonoBehaviour {
 	{
 		if (controller.collisions.below && !onSpringPlatform)
 		{
-			if (jumpBufferTimer > 0)
+			if (!jumpBufferTimer.IsTimerComplete())
 			{
 				HandleGroundedJump(true);
-				jumpBufferTimer = 0;
+				jumpBufferTimer.CancelTimer();
 			}
-		}
-		else
-		{
-			jumpBufferTimer -= Time.deltaTime;
 		}
 	}
 
@@ -280,11 +275,7 @@ public class Player : MonoBehaviour {
 	{
 		if (controller.collisions.below)
 		{
-			coyoteTimeJumpTimer = coytoteTimeJumpMaxTime;
-		}
-		else
-		{
-			coyoteTimeJumpTimer -= Time.deltaTime;
+			coyoteTimeJumpTimer.SetTimer(coytoteTimeJumpMaxTime);
 		}
 	}
 
@@ -293,11 +284,6 @@ public class Player : MonoBehaviour {
 		if (controller.collisions.below)
 		{
 			canDash = true;
-		}
-
-		if (!isDashing)
-		{
-			timeBetweenDash -= Time.deltaTime;
 		}
 	}
 
@@ -325,7 +311,7 @@ public class Player : MonoBehaviour {
 		}
 		else
 		{
-			if (coyoteTimeJumpTimer > 0 && !springJump)
+			if (!coyoteTimeJumpTimer.IsTimerComplete() && !springJump)
 			{
 				HandleCoyoteTimeJump();
 			}
@@ -349,10 +335,9 @@ public class Player : MonoBehaviour {
 	// There is a small delay between the player being able to dash
 	public void OnDashInputDown()
 	{
-		if (!isDashing && canDash && timeBetweenDash < 0)
+		if (!isDashing && canDash && betweenDashTimer.IsTimerComplete())
 		{
-			dashDelayTime = maxDashDelayTime;
-			dashTime = maxDashTime;
+			dashDelayTimer.SetTimer(maxDashDelayTime, delegate() { dashTimer.SetTimer(maxDashTime); });
 			isDashing = true;
 			isDelayedDashing = true;
 			canDash = false;
@@ -361,13 +346,13 @@ public class Player : MonoBehaviour {
 
 	public void HandleSpringPlatform(float maxSpringVelocity, float minSpringVelocity)
 	{
-		if (jumpBufferTimer > 0)
+		if (!jumpBufferTimer.IsTimerComplete())
 		{
 			velocity.y = maxSpringVelocity;
 
 			playerAnimations.jump = true;
 
-			jumpBufferTimer = 0;
+			jumpBufferTimer.CancelTimer();
 		}
 		else
 		{
@@ -397,7 +382,7 @@ public class Player : MonoBehaviour {
 
 		playerAnimations.jump = true;
 
-		coyoteTimeJumpTimer = 0;
+		coyoteTimeJumpTimer.CancelTimer();
 	}
 
 	void HandleGroundedJump(bool bufferedJump = false)
@@ -428,7 +413,7 @@ public class Player : MonoBehaviour {
 			playerAnimations.jump = true;
 		}
 
-		coyoteTimeJumpTimer = 0;
+		coyoteTimeJumpTimer.CancelTimer();
 	}
 
 	void HandleCoyoteTimeJump()
@@ -437,12 +422,12 @@ public class Player : MonoBehaviour {
 
 		playerAnimations.jump = true;
 
-		coyoteTimeJumpTimer = 0;
+		coyoteTimeJumpTimer.CancelTimer();
 	}
 
 	void HandleBufferJump()
 	{
-		jumpBufferTimer = jumpBufferMaxTime;
+		jumpBufferTimer.SetTimer(jumpBufferMaxTime);
 	}
 
 	public void StartRewind()
@@ -450,7 +435,7 @@ public class Player : MonoBehaviour {
 		if (!isRewinding)
 		{
 			isRewinding = true;
-			rewindTime = maxRewindTime;
+			rewindTimer.SetTimer(maxRewindTime, delegate() { StopRewind(); });
 
 			playerAnimations.SetSpriteEnabled(false);
 			playerAnimations.SetTrailRendererEmitting(false);
@@ -476,18 +461,6 @@ public class Player : MonoBehaviour {
 			playerRewindGhost = InstantiateRewindGhost(pointsInTime[pointsInTime.Count - 1]);
 		else if (removedPointFromList)
 			UpdateRewindGhost(pointsInTime[pointsInTime.Count - 1]);
-	}
-
-	void Rewind()
-	{
-		if (rewindTime > 0)
-		{
-			rewindTime -= Time.deltaTime;
-		}
-		else
-		{
-			StopRewind();
-		}
 	}
 
 	void StopRewind()
