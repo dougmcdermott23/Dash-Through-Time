@@ -195,6 +195,56 @@ public class Player : MonoBehaviour {
 			facingRight = input.x > 0;
 	}
 
+	public void SetDirectionalInput(Vector2 directionInput)
+	{
+		input = directionInput;
+	}
+
+	// Handle player sliding against a vertical wall
+	// If directional input is in opposite direction of the wall while sliding, move after a slight delay to allow for player jump input
+	void CheckWallSliding()
+	{
+		wallDirX = (controller.collisions.left) ? -1 : 1;
+
+		wallSliding = false;
+		if ((controller.collisions.left || controller.collisions.right) && !controller.collisions.below && velocity.y < 0)
+		{
+			wallSliding = true;
+
+			if (velocity.y < -wallSlideSpeedMax)
+				velocity.y = -wallSlideSpeedMax;
+
+			if (!wallStickTimer.IsTimerComplete())
+			{
+				velocityXSmoothing = 0;
+				velocity.x = 0;
+
+				if (input.x == wallDirX || input.x == 0)
+					wallStickTimer.SetTimer(wallStickTime);
+			}
+			else
+			{
+				wallStickTimer.SetTimer(wallStickTime);
+			}
+		}
+	}
+
+	#region Dash
+
+	// Player cannot dash if already dashing
+	// Player regains ability to dash when grounded
+	// There is a small delay between the player being able to dash
+	public void OnDashInputDown()
+	{
+		if (!isDashing && canDash && betweenDashTimer.IsTimerComplete())
+		{
+			dashDelayTimer.SetTimer(maxDashDelayTime, delegate () { dashTimer.SetTimer(maxDashTime); });
+			isDashing = true;
+			isDelayedDashing = true;
+			canDash = false;
+		}
+	}
+
 	// There is a small delay between button press and player dash where the user can buffer a direction
 	// The player dashes in the set x direction for a set period
 	// On the first frame after the dash is complete, set player speed and timer between player dashes
@@ -230,55 +280,6 @@ public class Player : MonoBehaviour {
 		}
 	}
 
-	// Handle player sliding against a vertical wall
-	// If directional input is in opposite direction of the wall while sliding, move after a slight delay to allow for player jump input
-	void CheckWallSliding()
-	{
-		wallDirX = (controller.collisions.left) ? -1 : 1;
-
-		wallSliding = false;
-		if ((controller.collisions.left || controller.collisions.right) && !controller.collisions.below && velocity.y < 0)
-		{
-			wallSliding = true;
-
-			if (velocity.y < -wallSlideSpeedMax)
-				velocity.y = -wallSlideSpeedMax;
-
-			if (!wallStickTimer.IsTimerComplete())
-			{
-				velocityXSmoothing = 0;
-				velocity.x = 0;
-
-				if (input.x == wallDirX || input.x == 0)
-					wallStickTimer.SetTimer(wallStickTime);
-			}
-			else
-			{
-				wallStickTimer.SetTimer(wallStickTime);
-			}
-		}
-	}
-
-	void CheckJumpBuffer()
-	{
-		if (controller.collisions.below && !onSpringPlatform)
-		{
-			if (!jumpBufferTimer.IsTimerComplete())
-			{
-				HandleGroundedJump(true);
-				jumpBufferTimer.CancelTimer();
-			}
-		}
-	}
-
-	void CheckGroundControlTimers()
-	{
-		if (controller.collisions.below)
-		{
-			coyoteTimeJumpTimer.SetTimer(coytoteTimeJumpMaxTime);
-		}
-	}
-
 	void CheckDashSettings()
 	{
 		if (controller.collisions.below)
@@ -293,13 +294,12 @@ public class Player : MonoBehaviour {
 		canDash = true;
 	}
 
-	public void SetDirectionalInput(Vector2 directionInput)
-	{
-		input = directionInput;
-	}
+	#endregion
 
-	// Handle player jumping
-	public void OnJumpInputDown()
+    #region Jump
+
+    // Handle player jumping
+    public void OnJumpInputDown()
 	{
 		if (wallSliding)
 		{
@@ -330,36 +330,24 @@ public class Player : MonoBehaviour {
 		}
 	}
 
-	// Player cannot dash if already dashing
-	// Player regains ability to dash when grounded
-	// There is a small delay between the player being able to dash
-	public void OnDashInputDown()
+	void CheckJumpBuffer()
 	{
-		if (!isDashing && canDash && betweenDashTimer.IsTimerComplete())
+		if (controller.collisions.below && !onSpringPlatform)
 		{
-			dashDelayTimer.SetTimer(maxDashDelayTime, delegate() { dashTimer.SetTimer(maxDashTime); });
-			isDashing = true;
-			isDelayedDashing = true;
-			canDash = false;
+			if (!jumpBufferTimer.IsTimerComplete())
+			{
+				HandleGroundedJump(true);
+				jumpBufferTimer.CancelTimer();
+			}
 		}
 	}
 
-	public void HandleSpringPlatform(float maxSpringVelocity, float minSpringVelocity)
+	void CheckGroundControlTimers()
 	{
-		if (!jumpBufferTimer.IsTimerComplete())
+		if (controller.collisions.below)
 		{
-			velocity.y = maxSpringVelocity;
-
-			playerAnimations.jump = true;
-
-			jumpBufferTimer.CancelTimer();
+			coyoteTimeJumpTimer.SetTimer(coytoteTimeJumpMaxTime);
 		}
-		else
-		{
-			velocity.y = minSpringVelocity;
-		}
-		
-		springJump = true;
 	}
 
 	void HandleWallSlideJump()
@@ -430,6 +418,28 @@ public class Player : MonoBehaviour {
 		jumpBufferTimer.SetTimer(jumpBufferMaxTime);
 	}
 
+	public void HandleSpringPlatform(float maxSpringVelocity, float minSpringVelocity)
+	{
+		if (!jumpBufferTimer.IsTimerComplete())
+		{
+			velocity.y = maxSpringVelocity;
+
+			playerAnimations.jump = true;
+
+			jumpBufferTimer.CancelTimer();
+		}
+		else
+		{
+			velocity.y = minSpringVelocity;
+		}
+
+		springJump = true;
+	}
+
+	#endregion
+
+	#region Rewind
+
 	public void StartRewind()
 	{
 		if (!isRewinding)
@@ -499,7 +509,9 @@ public class Player : MonoBehaviour {
 		playerRewindGhost.transform.localScale = point.scale;
 	}
 
-	IEnumerator PlayerContolPause(float time)
+	#endregion
+
+    IEnumerator PlayerContolPause(float time)
 	{
 		pausePlayerControl = true;
 
