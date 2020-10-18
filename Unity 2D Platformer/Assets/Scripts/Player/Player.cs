@@ -5,12 +5,34 @@ using UnityEngine;
 [RequireComponent(typeof(Controller))]
 public class Player : MonoBehaviour {
 
-	Controller controller;
+	public Controller PlayerController { get { return _playerController; } private set { _playerController = value; } }
+	private Controller _playerController;
+
+	public Vector2 PlayerInput { get { return _input; } private set { _input = value; } }
+	private Vector2 _input;
+
+	public Vector3 PlayerVelocity { get { return _velocity; } private set { _velocity = value; } }
+	private Vector3 _velocity;
+
+	public bool Jump { get { return _jump; } private set { _jump = value; } }
+	public bool _jump;
+
+	public bool WallSlide { get { return _wallSlide; } private set { _wallSlide = value; } }
+	private bool _wallSlide;
+
+	public bool Dash { get { return _dash; } private set { _dash = value; } }
+	private bool _dash;
+
+	public bool Rewind { get { return _rewind; } private set { _rewind = value; } }
+	private bool _rewind;
+
+	public bool Dead { get { return _dead; } private set { _dead = value; } }
+	private bool _dead;
 
 	PlayerAnimations playerAnimations;
 
-	Vector2 input;
-	Vector3 velocity;
+	//Animator animator;
+	PlayerAnimationStates currentAnimation;
 
 	// Ground movement
 	[Header("Ground Movement")]
@@ -45,7 +67,6 @@ public class Player : MonoBehaviour {
 	public float wallSlideSpeedMax = 3;
 	public float wallStickTime = 0.1f;
 	Timer wallStickTimer;
-	bool wallSliding;
 	int wallDirX;
 
 	// Dash
@@ -58,9 +79,7 @@ public class Player : MonoBehaviour {
 	Timer betweenDashTimer;
 	Timer dashTimer;
 	float dashSpeed;
-	bool isDashing;
-	bool isDelayedDashing;
-	bool canDash;
+	PlayerDashStates dashState = PlayerDashStates.DASH_AVAILABLE;
 
 	// Rewind
 	[Header("Rewind")]
@@ -72,16 +91,18 @@ public class Player : MonoBehaviour {
 	public float maxRewindTime = 0.5f;
 	Timer rewindTimer;
 	List<PointInTime> pointsInTime;
-	bool isRewinding = false;
+	PlayerRewindStates rewindState = PlayerRewindStates.RECORDING;
 
 	// Level Transition
 	[Header("Level Transition")]
 	public float levelTransitionTime = 0.5f;
-	[SerializeField] bool pausePlayerControl;
+	public float deathTransitionTime = 0.5f;
+	bool pausePlayerControl;
 
 	void Start()
 	{
-		controller = GetComponent<Controller>();
+		_playerController = GetComponent<Controller>();
+		//animator = GetComponent<Animator>();
 
 		coyoteTimeJumpTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
 		jumpBufferTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
@@ -114,12 +135,14 @@ public class Player : MonoBehaviour {
 
 	void Update ()
 	{
+		ResetStateVariables();
+
 		if (pausePlayerControl)
 			return;
 
-		if (!isRewinding)
+		if (rewindState == PlayerRewindStates.RECORDING)
 		{
-			playerAnimations.RotateInDirectionOfMovement(input);
+			playerAnimations.RotateInDirectionOfMovement(_input);
 			CalculatePlayerVelocity();
 
 			CheckDashSettings();
@@ -127,14 +150,14 @@ public class Player : MonoBehaviour {
 			CheckWallSliding();
 			CheckJumpBuffer();
 
-			controller.Move(velocity * Time.deltaTime, input);
+			_playerController.Move(_velocity * Time.deltaTime, _input);
 
-			// Store if player is on a spring platform here because if the platform is moving the controller.collisions is reset
-			onSpringPlatform = controller.collisions.onSpringPlatform;
+			// Store if player is on a spring platform here because if the platform is moving the _playerController.collisions is reset
+			onSpringPlatform = _playerController.collisions.onSpringPlatform;
 
-			if (controller.collisions.above || (controller.collisions.below && !controller.collisions.slidingDownSlope && !onSpringPlatform))
+			if (_playerController.collisions.above || (_playerController.collisions.below && !_playerController.collisions.slidingDownSlope && !onSpringPlatform))
 			{
-				velocity.y = 0;
+				_velocity.y = 0;
 				springJump = false;
 			}
 
@@ -145,16 +168,36 @@ public class Player : MonoBehaviour {
 		playerAnimations.Reset();
 	}
 
+	void ResetStateVariables(bool resetAll = false)
+	{
+		_jump = false;
+		_wallSlide = false;
+
+		if (resetAll)
+		{
+			_dash = false;
+			_rewind = false;
+			_dead = false;
+		}
+	}
+
+	// If player dies, play animation and reset player
+	// If player transitions to a new room, determine spawn position and reset player
 	public void OnReset(bool isPlayerDead, Vector3[] playerSpawnLocations)
 	{
-		velocity = Vector2.zero;
+		ResetStateVariables(true);
+		_velocity = Vector2.zero;
 
-		int spawnIndex = 0;
-
-		if (!isPlayerDead)
+		if (isPlayerDead)
 		{
-			StartCoroutine(PlayerContolPause(levelTransitionTime));
+			// Set for state controller
+			_dead = true;
 
+			StartCoroutine(ResetPlayer(playerSpawnLocations[0], deathTransitionTime));
+		}
+		else
+		{
+			int spawnIndex = 0;
 			float minDistance = float.PositiveInfinity;
 
 			for (int i = 0; i < playerSpawnLocations.Length; i++)
@@ -166,60 +209,56 @@ public class Player : MonoBehaviour {
 					minDistance = distance;
 				}
 			}
+
+			StartCoroutine(ResetPlayer(playerSpawnLocations[spawnIndex], levelTransitionTime));
 		}
-
-		transform.position = playerSpawnLocations[spawnIndex];
-
-		ResetDash();
-		ResetRewind();
 	}
 
 	void CalculatePlayerVelocity()
 	{
 		bool setDir = true;
 
-		if (isDashing)
+		if (dashState == PlayerDashStates.DASHING)
 		{
 			HandlePlayerDash();
 
-			setDir = isDelayedDashing;
+			setDir = !dashDelayTimer.IsTimerComplete();
 		}
 		else
 		{
-			float targetVelocityX = input.x * moveSpeed;
-			velocity.x = Mathf.SmoothDamp(velocity.x, targetVelocityX, ref velocityXSmoothing, (controller.collisions.below) ? accelerationTimeGrounded : accelerationTimeAirborne);
-			velocity.y += gravity * Time.deltaTime;
+			float targetVelocityX = _input.x * moveSpeed;
+			_velocity.x = Mathf.SmoothDamp(_velocity.x, targetVelocityX, ref velocityXSmoothing, (_playerController.collisions.below) ? accelerationTimeGrounded : accelerationTimeAirborne);
+			_velocity.y += gravity * Time.deltaTime;
 		}
 
-		if (input.x != 0 && setDir)
-			facingRight = input.x > 0;
+		if (_input.x != 0 && setDir)
+			facingRight = _input.x > 0;
 	}
 
 	public void SetDirectionalInput(Vector2 directionInput)
 	{
-		input = directionInput;
+		_input = directionInput;
 	}
 
 	// Handle player sliding against a vertical wall
 	// If directional input is in opposite direction of the wall while sliding, move after a slight delay to allow for player jump input
 	void CheckWallSliding()
 	{
-		wallDirX = (controller.collisions.left) ? -1 : 1;
+		wallDirX = (_playerController.collisions.left) ? -1 : 1;
 
-		wallSliding = false;
-		if ((controller.collisions.left || controller.collisions.right) && !controller.collisions.below && velocity.y < 0)
+		if ((_playerController.collisions.left || _playerController.collisions.right) && !_playerController.collisions.below && _velocity.y < 0)
 		{
-			wallSliding = true;
+			_wallSlide = true;
 
-			if (velocity.y < -wallSlideSpeedMax)
-				velocity.y = -wallSlideSpeedMax;
+			if (_velocity.y < -wallSlideSpeedMax)
+				_velocity.y = -wallSlideSpeedMax;
 
 			if (!wallStickTimer.IsTimerComplete())
 			{
 				velocityXSmoothing = 0;
-				velocity.x = 0;
+				_velocity.x = 0;
 
-				if (input.x == wallDirX || input.x == 0)
+				if (_input.x == wallDirX || _input.x == 0)
 					wallStickTimer.SetTimer(wallStickTime);
 			}
 			else
@@ -236,12 +275,10 @@ public class Player : MonoBehaviour {
 	// There is a small delay between the player being able to dash
 	public void OnDashInputDown()
 	{
-		if (!isDashing && canDash && betweenDashTimer.IsTimerComplete())
+		if (dashState == PlayerDashStates.DASH_AVAILABLE && betweenDashTimer.IsTimerComplete())
 		{
 			dashDelayTimer.SetTimer(maxDashDelayTime, delegate () { dashTimer.SetTimer(maxDashTime); });
-			isDashing = true;
-			isDelayedDashing = true;
-			canDash = false;
+			dashState = PlayerDashStates.DASHING;
 		}
 	}
 
@@ -252,46 +289,51 @@ public class Player : MonoBehaviour {
 	{
 		if (!dashDelayTimer.IsTimerComplete())
 		{
-			velocity = Vector2.zero;
+			_velocity = Vector2.zero;
 		}
 		else
 		{
-			isDelayedDashing = false;
+			dashState = PlayerDashStates.DASHING;
+
+			// Set for state controller
+			_dash = true;
 
 			if (!dashTimer.IsTimerComplete())
 			{
 				float direction = facingRight ? 1 : -1;
 
-				velocity.x = direction * dashSpeed;
-				velocity.y = 0;
+				_velocity.x = direction * dashSpeed;
+				_velocity.y = 0;
 			}
 			else
 			{
 				// Player has finished dashing, reset velocity and set delay timer
 				float direction = facingRight ? 1 : -1;
 
-				velocity.x = direction * moveSpeed;
-				velocity.y = 0;
+				_velocity.x = direction * moveSpeed;
+				_velocity.y = 0;
 
 				betweenDashTimer.SetTimer(maxTimeBetweenDash);
 
-				isDashing = false;
+				dashState = PlayerDashStates.DASH_NOT_AVAILABLE;
+
+				// Set for state controller
+				_dash = true;
 			}
 		}
 	}
 
 	void CheckDashSettings()
 	{
-		if (controller.collisions.below)
+		if (_playerController.collisions.below && dashState != PlayerDashStates.DASHING)
 		{
-			canDash = true;
+			dashState = PlayerDashStates.DASH_AVAILABLE;
 		}
 	}
 
 	void ResetDash()
 	{
-		isDashing = false;
-		canDash = true;
+		dashState = PlayerDashStates.DASH_AVAILABLE;
 	}
 
 	#endregion
@@ -301,11 +343,11 @@ public class Player : MonoBehaviour {
     // Handle player jumping
     public void OnJumpInputDown()
 	{
-		if (wallSliding)
+		if (_wallSlide)
 		{
 			HandleWallSlideJump();
 		}
-		else if (controller.collisions.below && !onSpringPlatform)
+		else if (_playerController.collisions.below && !onSpringPlatform)
 		{
 			HandleGroundedJump();
 		}
@@ -324,15 +366,15 @@ public class Player : MonoBehaviour {
 
 	public void OnJumpInputUp()
 	{
-		if (velocity.y > minJumpVelocity && !springJump)
+		if (_velocity.y > minJumpVelocity && !springJump)
 		{
-			velocity.y = minJumpVelocity;
+			_velocity.y = minJumpVelocity;
 		}
 	}
 
 	void CheckJumpBuffer()
 	{
-		if (controller.collisions.below && !onSpringPlatform)
+		if (_playerController.collisions.below && !onSpringPlatform)
 		{
 			if (!jumpBufferTimer.IsTimerComplete())
 			{
@@ -344,7 +386,7 @@ public class Player : MonoBehaviour {
 
 	void CheckGroundControlTimers()
 	{
-		if (controller.collisions.below)
+		if (_playerController.collisions.below)
 		{
 			coyoteTimeJumpTimer.SetTimer(coytoteTimeJumpMaxTime);
 		}
@@ -352,22 +394,24 @@ public class Player : MonoBehaviour {
 
 	void HandleWallSlideJump()
 	{
-		if (wallDirX == input.x)
+		if (wallDirX == _input.x)
 		{
-			velocity.x = -wallDirX * wallJumpClimb.x;
-			velocity.y = wallJumpClimb.y;
+			_velocity.x = -wallDirX * wallJumpClimb.x;
+			_velocity.y = wallJumpClimb.y;
 		}
-		else if (input.x == 0)
+		else if (_input.x == 0)
 		{
-			velocity.x = -wallDirX * wallJumpOff.x;
-			velocity.y = wallJumpOff.y;
+			_velocity.x = -wallDirX * wallJumpOff.x;
+			_velocity.y = wallJumpOff.y;
 		}
 		else
 		{
-			velocity.x = -wallDirX * wallJumpLeap.x;
-			velocity.y = wallJumpLeap.y;
+			_velocity.x = -wallDirX * wallJumpLeap.x;
+			_velocity.y = wallJumpLeap.y;
 		}
 
+		// Set for state controller
+		_jump = true;
 		playerAnimations.jump = true;
 
 		coyoteTimeJumpTimer.CancelTimer();
@@ -375,29 +419,35 @@ public class Player : MonoBehaviour {
 
 	void HandleGroundedJump(bool bufferedJump = false)
 	{
-		if (controller.collisions.slidingDownSlope)
+		if (_playerController.collisions.slidingDownSlope)
 		{
-			if (input.x != -Mathf.Sign(controller.collisions.slopeNormal.x))
+			if (_input.x != -Mathf.Sign(_playerController.collisions.slopeNormal.x))
 			{
-				velocity.y = maxJumpVelocity * controller.collisions.slopeNormal.y;
-				velocity.x = maxJumpVelocity * controller.collisions.slopeNormal.x;
+				_velocity.y = maxJumpVelocity * _playerController.collisions.slopeNormal.y;
+				_velocity.x = maxJumpVelocity * _playerController.collisions.slopeNormal.x;
 
+				// Set for state controller
+				_jump = true;
 				playerAnimations.jump = true;
 			}
 		}
 		else if (bufferedJump)
 		{
   			if (Input.GetKey(KeyCode.Space))
-				velocity.y = maxJumpVelocity;
+				_velocity.y = maxJumpVelocity;
 			else
-				velocity.y = minJumpVelocity;
+				_velocity.y = minJumpVelocity;
 
+			// Set for state controller
+			_jump = true;
 			playerAnimations.jump = true;
 		}
 		else
 		{
-			velocity.y = maxJumpVelocity;
+			_velocity.y = maxJumpVelocity;
 
+			// Set for state controller
+			_jump = true;
 			playerAnimations.jump = true;
 		}
 
@@ -406,8 +456,10 @@ public class Player : MonoBehaviour {
 
 	void HandleCoyoteTimeJump()
 	{
-		velocity.y = maxJumpVelocity;
+		_velocity.y = maxJumpVelocity;
 
+		// Set for state controller
+		_jump = true;
 		playerAnimations.jump = true;
 
 		coyoteTimeJumpTimer.CancelTimer();
@@ -422,7 +474,7 @@ public class Player : MonoBehaviour {
 	{
 		if (!jumpBufferTimer.IsTimerComplete())
 		{
-			velocity.y = maxSpringVelocity;
+			_velocity.y = maxSpringVelocity;
 
 			playerAnimations.jump = true;
 
@@ -430,9 +482,11 @@ public class Player : MonoBehaviour {
 		}
 		else
 		{
-			velocity.y = minSpringVelocity;
+			_velocity.y = minSpringVelocity;
 		}
 
+		// Set for state controller
+		_jump = true;
 		springJump = true;
 	}
 
@@ -442,13 +496,16 @@ public class Player : MonoBehaviour {
 
 	public void StartRewind()
 	{
-		if (!isRewinding)
+		if (rewindState != PlayerRewindStates.REWINDING)
 		{
-			isRewinding = true;
+			rewindState = PlayerRewindStates.REWINDING;
 			rewindTimer.SetTimer(maxRewindTime, delegate() { StopRewind(); });
 
 			playerAnimations.SetSpriteEnabled(false);
 			playerAnimations.SetTrailRendererEmitting(false);
+
+			// Set for state controller
+			_rewind = true;
 		}
 	}
 
@@ -476,14 +533,17 @@ public class Player : MonoBehaviour {
 	void StopRewind()
 	{
 		transform.position = pointsInTime[pointsInTime.Count - 1].position;
-		velocity = Vector3.zero;
+		_velocity = Vector3.zero;
 
 		ResetRewind();
+
+		// Set for state controller
+		_rewind = true;
 	}
 
 	void ResetRewind()
 	{
-		isRewinding = false;
+		rewindState = PlayerRewindStates.RECORDING;
 
 		pointsInTime.Clear();
 
@@ -511,12 +571,19 @@ public class Player : MonoBehaviour {
 
 	#endregion
 
-    IEnumerator PlayerContolPause(float time)
+    IEnumerator ResetPlayer(Vector3 playerSpawnLocation, float time)
 	{
 		pausePlayerControl = true;
 
 		yield return new WaitForSeconds(time);
 
+		transform.position = playerSpawnLocation;
 		pausePlayerControl = false;
+
+		ResetDash();
+		ResetRewind();
+
+		// Set for state controller
+		_dead = false;
 	}
 }
