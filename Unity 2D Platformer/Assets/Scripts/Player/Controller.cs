@@ -278,41 +278,4 @@ public class Controller : RaycastController
 	{
 		collisions.fallingThroughPlatform = false;
 	}
-
-	public struct CollisionInfo
-	{
-		public bool above, below;
-		public bool left, right;
-		public int facingRight;
-
-		public bool fallingThroughPlatform;
-		public Platform platform;
-		public bool onSpringPlatform;
-
-		public bool climbingSlope;
-		public bool descendingSlope;
-		public bool slidingDownSlope;
-		public float slopeAngle;
-		public float slopeAngleOld;
-
-		public Vector3 slopeNormal;
-		public Vector3 velocityOld;
-
-		public void Reset()
-		{
-			above = false;
-			below = false;
-			left = false;
-			right = false;
-
-			platform = null;
-			onSpringPlatform = false;
-
-			climbingSlope = false;
-			descendingSlope = false;
-			slidingDownSlope = false;
-			slopeAngleOld = slopeAngle;
-			slopeAngle = 0;
-		}
-	};
 }

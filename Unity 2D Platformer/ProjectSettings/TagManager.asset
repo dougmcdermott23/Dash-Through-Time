@@ -43,3 +43,9 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Player
+    uniqueID: 173074635
+    locked: 0
+  - name: Player Rewind
+    uniqueID: 2310529237
+    locked: 0

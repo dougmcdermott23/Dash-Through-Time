@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -30,9 +31,6 @@ public class Player : MonoBehaviour {
 	private bool _dead;
 
 	PlayerAnimations playerAnimations;
-
-	//Animator animator;
-	PlayerAnimationStates currentAnimation;
 
 	// Ground movement
 	[Header("Ground Movement")]
@@ -84,7 +82,10 @@ public class Player : MonoBehaviour {
 	// Rewind
 	[Header("Rewind")]
 	public GameObject playerGhostPreFab;
+	public GameObject rewindStartPreFab;
+	public GameObject rewindEndPreFab;
 	GameObject playerRewindGhost;
+	AnimationFramePickerSystem rewindGhostFramePicker;
 	public float maxRecordTime = 5;
 	public float minRecordTime = 1;
 	public float maxRecordIntervalTime = 0.25f;
@@ -102,7 +103,6 @@ public class Player : MonoBehaviour {
 	void Start()
 	{
 		_playerController = GetComponent<Controller>();
-		//animator = GetComponent<Animator>();
 
 		coyoteTimeJumpTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
 		jumpBufferTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
@@ -135,14 +135,11 @@ public class Player : MonoBehaviour {
 
 	void Update ()
 	{
-		ResetStateVariables();
-
 		if (pausePlayerControl)
 			return;
 
 		if (rewindState == PlayerRewindStates.RECORDING)
 		{
-			playerAnimations.RotateInDirectionOfMovement(_input);
 			CalculatePlayerVelocity();
 
 			CheckDashSettings();
@@ -164,8 +161,9 @@ public class Player : MonoBehaviour {
 			Record();
 		}
 
+		// Controll player animations
 		playerAnimations.SetAnimationParameters();
-		playerAnimations.Reset();
+		_jump = false;
 	}
 
 	void ResetStateVariables(bool resetAll = false)
@@ -250,7 +248,7 @@ public class Player : MonoBehaviour {
 		{
 			_wallSlide = true;
 
-			if (_velocity.y < -wallSlideSpeedMax)
+			if (_velocity.y < -wallSlideSpeedMax && _input.x != 0)
 				_velocity.y = -wallSlideSpeedMax;
 
 			if (!wallStickTimer.IsTimerComplete())
@@ -265,6 +263,10 @@ public class Player : MonoBehaviour {
 			{
 				wallStickTimer.SetTimer(wallStickTime);
 			}
+		}
+		else
+		{
+			_wallSlide = false;
 		}
 	}
 
@@ -311,14 +313,14 @@ public class Player : MonoBehaviour {
 				float direction = facingRight ? 1 : -1;
 
 				_velocity.x = direction * moveSpeed;
-				_velocity.y = 0;
+				_velocity.y = gravity * Time.deltaTime;
 
 				betweenDashTimer.SetTimer(maxTimeBetweenDash);
 
 				dashState = PlayerDashStates.DASH_NOT_AVAILABLE;
 
 				// Set for state controller
-				_dash = true;
+				_dash = false;
 			}
 		}
 	}
@@ -401,6 +403,7 @@ public class Player : MonoBehaviour {
 		}
 		else if (_input.x == 0)
 		{
+			_input.x = wallDirX * -1;	// Set input direction for dashes after wall jumps with no input
 			_velocity.x = -wallDirX * wallJumpOff.x;
 			_velocity.y = wallJumpOff.y;
 		}
@@ -412,7 +415,6 @@ public class Player : MonoBehaviour {
 
 		// Set for state controller
 		_jump = true;
-		playerAnimations.jump = true;
 
 		coyoteTimeJumpTimer.CancelTimer();
 	}
@@ -428,7 +430,6 @@ public class Player : MonoBehaviour {
 
 				// Set for state controller
 				_jump = true;
-				playerAnimations.jump = true;
 			}
 		}
 		else if (bufferedJump)
@@ -440,7 +441,6 @@ public class Player : MonoBehaviour {
 
 			// Set for state controller
 			_jump = true;
-			playerAnimations.jump = true;
 		}
 		else
 		{
@@ -448,7 +448,6 @@ public class Player : MonoBehaviour {
 
 			// Set for state controller
 			_jump = true;
-			playerAnimations.jump = true;
 		}
 
 		coyoteTimeJumpTimer.CancelTimer();
@@ -460,7 +459,6 @@ public class Player : MonoBehaviour {
 
 		// Set for state controller
 		_jump = true;
-		playerAnimations.jump = true;
 
 		coyoteTimeJumpTimer.CancelTimer();
 	}
@@ -475,8 +473,6 @@ public class Player : MonoBehaviour {
 		if (!jumpBufferTimer.IsTimerComplete())
 		{
 			_velocity.y = maxSpringVelocity;
-
-			playerAnimations.jump = true;
 
 			jumpBufferTimer.CancelTimer();
 		}
@@ -504,6 +500,8 @@ public class Player : MonoBehaviour {
 			playerAnimations.SetSpriteEnabled(false);
 			playerAnimations.SetTrailRendererEmitting(false);
 
+			Instantiate(rewindStartPreFab, transform.position + new Vector3(0, 0.5f, 0), transform.rotation);
+
 			// Set for state controller
 			_rewind = true;
 		}
@@ -520,14 +518,20 @@ public class Player : MonoBehaviour {
 			removedPointFromList = true;
 		}
 
-		PointInTime pointInTime = new PointInTime(transform.position, playerAnimations.transform.localRotation, playerAnimations.transform.localScale);
+		try
+		{
+			PointInTime pointInTime = new PointInTime(transform.position, playerAnimations.GetPlayerAnimation(), playerAnimations.facingRight ? 1 : -1);
+			pointsInTime.Insert(0, pointInTime);
 
-		pointsInTime.Insert(0, pointInTime);
-
-		if (!playerRewindGhost)
-			playerRewindGhost = InstantiateRewindGhost(pointsInTime[pointsInTime.Count - 1]);
-		else if (removedPointFromList)
-			UpdateRewindGhost(pointsInTime[pointsInTime.Count - 1]);
+			if (!playerRewindGhost)
+			{
+				playerRewindGhost = InstantiateRewindGhost(pointsInTime[pointsInTime.Count - 1]);
+				rewindGhostFramePicker = playerRewindGhost.GetComponent<AnimationFramePickerSystem>();
+			}
+			else if (removedPointFromList)
+				UpdateRewindGhost(pointsInTime[pointsInTime.Count - 1]);
+		}
+		catch (Exception e) { }
 	}
 
 	void StopRewind()
@@ -536,9 +540,10 @@ public class Player : MonoBehaviour {
 		_velocity = Vector3.zero;
 
 		ResetRewind();
+		Instantiate(rewindEndPreFab, transform.position + new Vector3(0, 0.5f, 0), transform.rotation);
 
 		// Set for state controller
-		_rewind = true;
+		_rewind = false;
 	}
 
 	void ResetRewind()
@@ -556,17 +561,24 @@ public class Player : MonoBehaviour {
 
 	GameObject InstantiateRewindGhost(PointInTime point)
 	{
-		GameObject ghost = Instantiate(playerGhostPreFab, point.position + new Vector3(0, 0.5f, 0), point.rotation);    // Need to shift the ghost by 0.5 in y dir to match the sprite shift as result from collider 2D shift
-		ghost.transform.localScale = point.scale;
+		GameObject ghost = Instantiate(playerGhostPreFab, point.position + new Vector3(0, -0.5f, 0), Quaternion.identity);    // Need to shift the ghost by 0.5 in y dir to match the sprite shift as result from collider 2D shift
+
+		if (rewindGhostFramePicker)
+			rewindGhostFramePicker.ChangeSprite(point.spriteIndex);
+
+		ghost.transform.localScale = new Vector3(point.facingRight, 1, 1);
 
 		return ghost;
 	}
 
 	void UpdateRewindGhost(PointInTime point)
 	{
-		playerRewindGhost.transform.position = point.position + new Vector3(0, 0.5f, 0); // Need to shift the ghost by 0.5 in y dir to match the sprite shift as result from collider 2D shift
-		playerRewindGhost.transform.rotation = point.rotation;
-		playerRewindGhost.transform.localScale = point.scale;
+		playerRewindGhost.transform.position = point.position + new Vector3(0, -0.5f, 0); // Need to shift the ghost by 0.5 in y dir to match the sprite shift as result from collider 2D shift
+		
+		if (rewindGhostFramePicker && point.spriteIndex >= 0)
+			rewindGhostFramePicker.ChangeSprite(point.spriteIndex);
+
+		playerRewindGhost.transform.localScale = new Vector3(point.facingRight, 1, 1);
 	}
 
 	#endregion
