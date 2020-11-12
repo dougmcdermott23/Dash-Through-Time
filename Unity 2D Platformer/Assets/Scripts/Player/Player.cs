@@ -31,6 +31,7 @@ public class Player : MonoBehaviour {
 	private bool _dead;
 
 	PlayerAnimations playerAnimations;
+	PlayerTrail playerTrail;
 
 	// Ground movement
 	[Header("Ground Movement")]
@@ -87,11 +88,10 @@ public class Player : MonoBehaviour {
 	GameObject playerRewindGhost;
 	AnimationFramePickerSystem rewindGhostFramePicker;
 	public float maxRecordTime = 5;
-	public float minRecordTime = 1;
-	public float maxRecordIntervalTime = 0.25f;
 	public float maxRewindTime = 0.5f;
 	Timer rewindTimer;
 	List<PointInTime> pointsInTime;
+	List<Vector3> trailPositions;
 	PlayerRewindStates rewindState = PlayerRewindStates.RECORDING;
 
 	// Level Transition
@@ -113,9 +113,11 @@ public class Player : MonoBehaviour {
 		rewindTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
 
 		playerAnimations = gameObject.GetComponentInChildren<PlayerAnimations>();
-		if (playerAnimations)
+		playerTrail = gameObject.GetComponentInChildren<PlayerTrail>();
+
+		if (playerTrail)
 		{
-			playerAnimations.InitiateTrailRenderer(maxRecordTime);
+			playerTrail.SetTrailRendererEmitting(true);
 		}
 		else
 		{
@@ -123,6 +125,7 @@ public class Player : MonoBehaviour {
 		}
 
 		pointsInTime = new List<PointInTime>();
+		trailPositions = new List<Vector3>();
 
 		// From Kinematic Equations
 		gravity = -(2 * maxJumpHeight) / Mathf.Pow (timeToJumpApex, 2);
@@ -498,7 +501,7 @@ public class Player : MonoBehaviour {
 			rewindTimer.SetTimer(maxRewindTime, delegate() { StopRewind(); });
 
 			playerAnimations.SetSpriteEnabled(false);
-			playerAnimations.SetTrailRendererEmitting(false);
+			playerTrail.SetTrailRendererEmitting(false);
 
 			Instantiate(rewindStartPreFab, transform.position + new Vector3(0, 0.5f, 0), transform.rotation);
 
@@ -514,14 +517,20 @@ public class Player : MonoBehaviour {
 		if (pointsInTime.Count > Mathf.Round(maxRecordTime / Time.deltaTime))
 		{
 			pointsInTime.RemoveAt(pointsInTime.Count - 1);
+			trailPositions.RemoveAt(0);
 
 			removedPointFromList = true;
 		}
 
 		try
 		{
+			// Player Ghost
 			PointInTime pointInTime = new PointInTime(transform.position, playerAnimations.GetPlayerAnimation(), playerAnimations.facingRight ? 1 : -1);
 			pointsInTime.Insert(0, pointInTime);
+
+			// Player Trail
+			trailPositions.Add(transform.position);
+			playerTrail.SetTrailPositions(trailPositions.ToArray());
 
 			if (!playerRewindGhost)
 			{
@@ -551,12 +560,13 @@ public class Player : MonoBehaviour {
 		rewindState = PlayerRewindStates.RECORDING;
 
 		pointsInTime.Clear();
+		trailPositions.Clear();
 
 		Destroy(playerRewindGhost);
 
 		playerAnimations.SetSpriteEnabled(true);
-		playerAnimations.SetTrailRendererEmitting(true);
-		playerAnimations.ResetTrailRenderer();
+		playerTrail.SetTrailRendererEmitting(true);
+		playerTrail.ResetTrailRenderer();
 	}
 
 	GameObject InstantiateRewindGhost(PointInTime point)

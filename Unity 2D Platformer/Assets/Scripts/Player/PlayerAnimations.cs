@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(TrailRenderer))]
+[RequireComponent(typeof(SpriteRenderer))]
 public class PlayerAnimations : MonoBehaviour
 {
     Player player;
@@ -10,7 +10,6 @@ public class PlayerAnimations : MonoBehaviour
     Animator animator;
 
     SpriteRenderer spriteRenderer;
-    TrailRenderer trail;
 
     PreviousFrameParameters previousFrameParameters;
     [HideInInspector] public bool facingRight = true;
@@ -30,12 +29,11 @@ public class PlayerAnimations : MonoBehaviour
         { "Player_Dash_Recover_To_Air", PlayerAnimationStartIndices.DASH_RECOVER_TO_AIR }
     };
 
-    private void Start()
+    private void Awake()
     {
         player = GetComponentInParent<Player>();
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-        trail = GetComponent<TrailRenderer>();
     }
 
     public int GetPlayerAnimation()
@@ -112,21 +110,5 @@ public class PlayerAnimations : MonoBehaviour
     public void SetSpriteEnabled(bool enabled)
     {
         spriteRenderer.enabled = enabled;
-    }
-
-    public void InitiateTrailRenderer(float trailTime)
-    {
-        SetTrailRendererEmitting(true);
-        trail.time = trailTime;		// The trail should not start fading out before the player has finished the rewind
-    }
-
-    public void ResetTrailRenderer()
-    {
-        trail.Clear();
-    }
-
-    public void SetTrailRendererEmitting(bool emitting)
-    {
-        trail.emitting = emitting;
     }
 }
