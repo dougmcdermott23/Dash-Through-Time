@@ -56,7 +56,6 @@ public class Player : MonoBehaviour {
 
 	// Spring
 	bool springJump;
-	bool onSpringPlatform;
 
 	// Wall sliding
 	[Header("Wall Sliding")]
@@ -152,10 +151,7 @@ public class Player : MonoBehaviour {
 
 			_playerController.Move(_velocity * Time.deltaTime, _input);
 
-			// Store if player is on a spring platform here because if the platform is moving the _playerController.collisions is reset
-			onSpringPlatform = _playerController.collisions.onSpringPlatform;
-
-			if (_playerController.collisions.above || (_playerController.collisions.below && !_playerController.collisions.slidingDownSlope && !onSpringPlatform))
+			if (_playerController.collisions.above || (_playerController.collisions.below && !_playerController.collisions.slidingDownSlope))
 			{
 				_velocity.y = 0;
 				springJump = false;
@@ -352,7 +348,7 @@ public class Player : MonoBehaviour {
 		{
 			HandleWallSlideJump();
 		}
-		else if (_playerController.collisions.below && !onSpringPlatform)
+		else if (_playerController.collisions.below)
 		{
 			HandleGroundedJump();
 		}
@@ -379,7 +375,7 @@ public class Player : MonoBehaviour {
 
 	void CheckJumpBuffer()
 	{
-		if (_playerController.collisions.below && !onSpringPlatform)
+		if (_playerController.collisions.below)
 		{
 			if (!jumpBufferTimer.IsTimerComplete())
 			{
@@ -471,8 +467,11 @@ public class Player : MonoBehaviour {
 		jumpBufferTimer.SetTimer(jumpBufferMaxTime);
 	}
 
-	public void HandleSpringPlatform(float maxSpringVelocity, float minSpringVelocity)
+	public void HandleSpringPlatform(List<float> jumpVelocities)
 	{
+		float maxSpringVelocity = jumpVelocities[0];
+		float minSpringVelocity = jumpVelocities[1];
+
 		if (!jumpBufferTimer.IsTimerComplete())
 		{
 			_velocity.y = maxSpringVelocity;
@@ -540,7 +539,10 @@ public class Player : MonoBehaviour {
 			else if (removedPointFromList)
 				UpdateRewindGhost(pointsInTime[pointsInTime.Count - 1]);
 		}
-		catch (Exception e) { }
+		catch (Exception)
+		{
+			// This fails on the first frame after rewind finishes
+		}
 	}
 
 	void StopRewind()

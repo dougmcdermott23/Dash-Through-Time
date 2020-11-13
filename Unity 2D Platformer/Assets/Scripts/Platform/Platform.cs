@@ -2,27 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-//////////////////////////////////////////////////////////////////////////////////////////
-/// Platform Controller
-/// 
-/// Platform Types:
-/// - Moving Platform: moves between waypoints.
-/// - Falling Platform: moves vertically and is destroyed after player triggers.
-/// - Spring Platform: bounces player
-/// 
-/// Combining various types of platforms may result in unexpected behaviour
-//////////////////////////////////////////////////////////////////////////////////////////
-
 public class Platform : RaycastController
 {
 	public LayerMask passengerMask;
 
 	List<PassengerMovement> passengerMovement;
 	Dictionary<Transform, Controller> passengerDictionary = new Dictionary<Transform, Controller>();
-
-	MovingPlatform movingPlatform;
-	FallingPlatform fallingPlatform;
-	SpringPlatform springPlatform;
 
 	Vector3 platformStartPosition;
 
@@ -47,47 +32,14 @@ public class Platform : RaycastController
         base.Start();
 
 		platformStartPosition = transform.position;
-
-		movingPlatform = gameObject.GetComponent<MovingPlatform>();
-		fallingPlatform = gameObject.GetComponent<FallingPlatform>();
-		springPlatform = gameObject.GetComponent<SpringPlatform>();
-
-		if (movingPlatform != null && fallingPlatform != null)
-			Debug.LogError("The moving platform controller and falling platform controller are not compatible!");
 	}
 
-	void Update()
-	{
-		UpdateRayCastOrigins();
-
-		Vector3 velocity = new Vector3();
-
-		DetectPassenger();
-
-		if (movingPlatform != null && movingPlatform.enabled)
-			velocity += movingPlatform.CalculatePlatformMovement();
-
-		if (fallingPlatform != null && fallingPlatform.enabled)
-			velocity += fallingPlatform.CalculatePlatformMovement();
-
-		CalculatePassengerMovement(velocity);
-		MovePassengers(true);
-		transform.Translate(velocity);
-		MovePassengers(false);
-	}
-
-	public void OnReset()
+	public virtual void OnReset()
 	{
 		transform.position = platformStartPosition;
-
-		if (movingPlatform != null && movingPlatform.enabled)
-			movingPlatform.OnReset();
-
-		if (fallingPlatform != null && fallingPlatform.enabled)
-			fallingPlatform.OnReset();
 	}
 
-	void CalculatePassengerMovement(Vector3 velocity)
+	protected void CalculatePassengerMovement(Vector3 velocity)
 	{
 		HashSet<Transform> movedPassengers = new HashSet<Transform>();
 		passengerMovement = new List<PassengerMovement>();
@@ -194,7 +146,7 @@ public class Platform : RaycastController
 
 	// Detect if a passenger is on the platform
 	// If passenger is detected, enable the platform trigger
-	bool DetectPassenger()
+	protected bool DetectPassenger()
 	{
 		float rayLength = skinWidth * 2;
 
@@ -217,7 +169,7 @@ public class Platform : RaycastController
 	// Move Passengers on the platform.
 	// If the platform is moving up, move the passenger first
 	// If the platform is moving down, move the platform first
-	void MovePassengers(bool beforeMovePlatform)
+	protected void MovePassengers(bool beforeMovePlatform)
 	{
 		foreach (PassengerMovement passenger in passengerMovement)
 		{
@@ -226,32 +178,5 @@ public class Platform : RaycastController
 			if (passenger.moveBeforePlatform == beforeMovePlatform)
 				passengerDictionary[passenger.transform].Move(passenger.velocity, Vector2.zero, passenger.standingOnPlatform);
 		}
-	}
-
-	// Called from player when they hit a platform
-	public void PlayerInteraction(GameObject gameObject)
-	{
-		if (DetectPassenger())
-		{
-			if (fallingPlatform != null && fallingPlatform.enabled)
-			{
-				fallingPlatform.PassengerDetected();
-			}
-
-			if (springPlatform != null && springPlatform.enabled)
-			{
-				PlayerInput playerInput = gameObject.GetComponent<PlayerInput>();
-				if (playerInput != null)
-					playerInput.SpringJump(springPlatform.maxJumpVelocity, springPlatform.minJumpVelocity);
-			}
-		}
-	}
-
-	public bool IsSpringPlatform()
-	{
-		if (springPlatform != null)
-			return true;
-		else
-			return false;
 	}
 }

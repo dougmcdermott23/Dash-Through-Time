@@ -2,11 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Platform))]
-public class FallingPlatform : MonoBehaviour
+public class FallingPlatform : Platform
 {
-	Vector3 platformStartPosition;
-
 	MeshRenderer meshRenderer;
 	int startLayer;
 
@@ -19,9 +16,9 @@ public class FallingPlatform : MonoBehaviour
 	bool isPlatformFalling;
 	bool isPlatformDisabled;
 
-	void Start()
+	public override void Start()
 	{
-		platformStartPosition = transform.position;
+		base.Start();
 
 		meshRenderer = gameObject.GetComponent<MeshRenderer>();
 		startLayer = gameObject.layer;
@@ -30,11 +27,28 @@ public class FallingPlatform : MonoBehaviour
 		velocity = Vector3.zero;
 	}
 
-	public void OnReset()
+	void Update()
 	{
+		UpdateRayCastOrigins();
+
+		Vector3 velocity = new Vector3();
+
+		isPlatformTriggered = isPlatformTriggered || DetectPassenger();
+
+		velocity += CalculatePlatformMovement();
+
+		CalculatePassengerMovement(velocity);
+		MovePassengers(true);
+		transform.Translate(velocity);
+		MovePassengers(false);
+	}
+
+	public override void OnReset()
+	{
+		base.OnReset();
+
 		StopAllCoroutines();
 
-		transform.position = platformStartPosition;
 		velocity = Vector3.zero;
 		isPlatformTriggered = false;
 		isPlatformFalling = false;
@@ -46,7 +60,7 @@ public class FallingPlatform : MonoBehaviour
 
 	// Platform moves after something triggers it
 	// There is a specified delay before the platform can move
-	public Vector3 CalculatePlatformMovement()
+	Vector3 CalculatePlatformMovement()
 	{
 		if (isPlatformTriggered)
 		{
@@ -73,13 +87,6 @@ public class FallingPlatform : MonoBehaviour
 		}
 
 		return velocity;
-	}
-
-	// Detect if a passenger is on the platform
-	// If passenger is detected, enable the platform trigger
-	public void PassengerDetected()
-	{
-		isPlatformTriggered = true;
 	}
 
 	IEnumerator PlatformFall(float time)

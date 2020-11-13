@@ -35,9 +35,6 @@ public class Controller : RaycastController
 		if (velocity.y != 0)
 			VerticalCollisions(ref velocity, input);
 
-		if (collisions.platform != null)
-			collisions.platform.PlayerInteraction(transform.gameObject);
-
 		if (standingOnPlatform)
 			collisions.below = true;
 
@@ -65,13 +62,6 @@ public class Controller : RaycastController
 				// Player is falling or jumping through an object
 				if (hit.distance == 0 && !collisions.below)
 					continue;
-
-				Platform platform = hit.transform.GetComponent<Platform>();
-				if (platform != null)
-				{
-					collisions.platform = platform;
-					collisions.onSpringPlatform = collisions.platform.IsSpringPlatform();
-				}
 
 				float slopeAngle = Vector2.Angle(hit.normal, Vector2.up);
 
@@ -145,13 +135,6 @@ public class Controller : RaycastController
 						Invoke("ResetFallingThroughPlatform", 0.25f);
 						continue;
 					}
-				}
-
-				Platform platform = hit.transform.GetComponent<Platform>();
-				if (platform != null)
-				{
-					collisions.platform = platform;
-					collisions.onSpringPlatform = collisions.platform.IsSpringPlatform();
 				}
 
 				// Collision detected, update variables and reset ray length to only detect other collisions that are closer

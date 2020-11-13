@@ -37,8 +37,6 @@ public struct CollisionInfo
 	public int facingRight;
 
 	public bool fallingThroughPlatform;
-	public Platform platform;
-	public bool onSpringPlatform;
 
 	public bool climbingSlope;
 	public bool descendingSlope;
@@ -55,9 +53,6 @@ public struct CollisionInfo
 		below = false;
 		left = false;
 		right = false;
-
-		platform = null;
-		onSpringPlatform = false;
 
 		climbingSlope = false;
 		descendingSlope = false;

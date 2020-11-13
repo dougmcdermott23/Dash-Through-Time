@@ -40,9 +40,4 @@ public class PlayerInput : MonoBehaviour
             player.StartRewind();
         }
     }
-
-    public void SpringJump(float maxSpringVelocity, float minSpringVelocity)
-    {
-        player.HandleSpringPlatform(maxSpringVelocity, minSpringVelocity);
-    }
 }

@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Platform))]
-public class MovingPlatform : MonoBehaviour
+public class MovingPlatform : Platform
 {
 	public float speed;
 	public float waitTime;
@@ -17,16 +16,34 @@ public class MovingPlatform : MonoBehaviour
 	int fromWaypointIndex;
 	float percentBetweenWaypoints;
 
-	void Start()
+	public override void Start()
 	{
+		base.Start();
+
 		// Set globalWaypoints for calculations
 		globalWaypoints = new Vector3[localWaypoints.Length];
 		for (int i = 0; i < localWaypoints.Length; i++)
 			globalWaypoints[i] = localWaypoints[i] + transform.position;
 	}
 
-	public void OnReset()
+	void Update()
 	{
+		UpdateRayCastOrigins();
+
+		Vector3 velocity = new Vector3();
+
+		velocity += CalculatePlatformMovement();
+
+		CalculatePassengerMovement(velocity);
+		MovePassengers(true);
+		transform.Translate(velocity);
+		MovePassengers(false);
+	}
+
+	public override void OnReset()
+	{
+		base.OnReset();
+
 		nextMoveTime = 0;
 		fromWaypointIndex = 0;
 		percentBetweenWaypoints = 0;
@@ -42,7 +59,7 @@ public class MovingPlatform : MonoBehaviour
 	// Platform moves between specified waypoints
 	// Index values are clamped
 	// The greater the distance, the slower the percentage will increase
-	public Vector3 CalculatePlatformMovement()
+	Vector3 CalculatePlatformMovement()
 	{
 		if (Time.time < nextMoveTime)
 			return Vector3.zero;
