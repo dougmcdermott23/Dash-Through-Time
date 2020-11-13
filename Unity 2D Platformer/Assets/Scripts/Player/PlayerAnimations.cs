@@ -89,7 +89,7 @@ public class PlayerAnimations : MonoBehaviour
         // Vertical Velocity
         animator.SetBool("isDescending", player.PlayerVelocity.y < 0);
 
-        if (player.PlayerVelocity.y < 0 && previousFrameParameters.velocity.y > 0)
+        if (player.PlayerVelocity.y < 0 && previousFrameParameters.velocity.y >= 0)
             animator.SetTrigger("verticalDirectionChanged");
 
         // Dashing
