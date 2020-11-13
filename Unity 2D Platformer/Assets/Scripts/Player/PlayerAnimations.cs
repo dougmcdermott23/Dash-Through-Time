@@ -59,7 +59,8 @@ public class PlayerAnimations : MonoBehaviour
 
     public void SetAnimationParameters()
     {
-        // Set Player Sprite Direction
+        #region Sprite Direction
+
         if ((facingRight && player.PlayerInput.x < 0) ||
             (!facingRight && player.PlayerInput.x > 0) ||
             (previousFrameParameters.wallSlide && player.PlayerInput.x == 0) ||
@@ -68,13 +69,22 @@ public class PlayerAnimations : MonoBehaviour
             Flip();
         }
 
-        // Horizontal Input
+        #endregion
+
+        #region Horizontal Input
+
         animator.SetBool("isRunning", player.PlayerInput.x != 0);
 
-        // Grounded
+        #endregion
+
+        #region Grounded
+
         animator.SetBool("isGrounded", player.PlayerController.collisions.below);
 
-        // Wall Sliding
+        #endregion
+
+        #region Wall Sliding
+
         int wallDirX = (previousFrameParameters.collisionInfo.left) ? -1 : 1;
         bool wallKick = wallDirX != player.PlayerInput.x || player.PlayerInput.x == 0;
 
@@ -82,27 +92,42 @@ public class PlayerAnimations : MonoBehaviour
         animator.SetBool("wasWallSliding", previousFrameParameters.wallSlide);
         animator.SetBool("isWallKick", wallKick);
 
-        // Jump
+        #endregion
+
+        #region Jump
+
         if (player.Jump)
             animator.SetTrigger("jump");
 
-        // Vertical Velocity
+        #endregion
+
+        #region Vertical Velocity
+
         animator.SetBool("isDescending", player.PlayerVelocity.y < 0);
 
+        animator.ResetTrigger("verticalDirectionChanged");
         if (player.PlayerVelocity.y < 0 && previousFrameParameters.velocity.y >= 0)
             animator.SetTrigger("verticalDirectionChanged");
 
-        // Dashing
+        #endregion
+
+        #region Dashing
+
         animator.SetBool("isDashing", player.Dash);
 
         if (player.Dash && !previousFrameParameters.dash)
             animator.SetTrigger("startDash");
 
-        // Rewind
+        #endregion
+
+        #region Rewind
+
         if (player.Rewind && !previousFrameParameters.rewind)
             animator.SetTrigger("startRewind");
         else if (!player.Rewind && previousFrameParameters.rewind)
             animator.SetTrigger("endRewind");
+
+        #endregion
 
         previousFrameParameters.SetPreviousParameters(player);
     }
