@@ -183,31 +183,17 @@ public class Player : MonoBehaviour {
 	public void OnReset(bool isPlayerDead, Vector3[] playerSpawnLocations)
 	{
 		ResetStateVariables(true);
-		_velocity = Vector2.zero;
 
 		if (isPlayerDead)
 		{
 			// Set for state controller
 			_dead = true;
 
-			StartCoroutine(ResetPlayer(playerSpawnLocations[0], deathTransitionTime));
+			StartCoroutine(ResetPlayer(deathTransitionTime, isPlayerDead, playerSpawnLocations[0], Vector3.zero));
 		}
 		else
 		{
-			int spawnIndex = 0;
-			float minDistance = float.PositiveInfinity;
-
-			for (int i = 0; i < playerSpawnLocations.Length; i++)
-			{
-				float distance = Vector3.Distance(transform.position, playerSpawnLocations[i]);
-				if (distance < minDistance)
-				{
-					spawnIndex = i;
-					minDistance = distance;
-				}
-			}
-
-			StartCoroutine(ResetPlayer(playerSpawnLocations[spawnIndex], levelTransitionTime));
+			StartCoroutine(ResetPlayer(levelTransitionTime, isPlayerDead, Vector3.zero, Vector3.zero));
 		}
 	}
 
@@ -375,11 +361,16 @@ public class Player : MonoBehaviour {
 
 	void CheckJumpBuffer()
 	{
-		if (_playerController.collisions.below)
+		if (!jumpBufferTimer.IsTimerComplete())
 		{
-			if (!jumpBufferTimer.IsTimerComplete())
+			if (_playerController.collisions.below)
 			{
 				HandleGroundedJump(true);
+				jumpBufferTimer.CancelTimer();
+			}
+			else if (_wallSlide)
+			{
+				HandleWallSlideJump();
 				jumpBufferTimer.CancelTimer();
 			}
 		}
@@ -595,19 +586,24 @@ public class Player : MonoBehaviour {
 
 	#endregion
 
-    IEnumerator ResetPlayer(Vector3 playerSpawnLocation, float time)
+    IEnumerator ResetPlayer(float time, bool isPlayerDead, Vector3 playerSpawnLocation, Vector3 playerBoostVelocity)
 	{
 		pausePlayerControl = true;
+		Vector3 playerPauseVelocity = _velocity;
 
 		yield return new WaitForSeconds(time);
 
-		transform.position = playerSpawnLocation;
-		pausePlayerControl = false;
+		if (isPlayerDead)
+			transform.position = playerSpawnLocation;
 
 		ResetDash();
 		ResetRewind();
 
 		// Set for state controller
 		_dead = false;
+
+		if (!isPlayerDead)
+			_velocity = playerPauseVelocity + playerBoostVelocity;
+		pausePlayerControl = false;
 	}
 }
