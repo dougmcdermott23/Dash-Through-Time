@@ -4,10 +4,10 @@ using UnityEngine;
 
 public class CloudController : MonoBehaviour
 {
-    public Vector3 cloudSpeed;
+    public float cloudSpeed;
 
     void Update()
     {
-        transform.position += cloudSpeed * Time.deltaTime;
+        transform.position += new Vector3(cloudSpeed, 0, 0) * Time.deltaTime;
     }
 }

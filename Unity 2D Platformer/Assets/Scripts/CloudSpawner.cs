@@ -6,6 +6,8 @@ public class CloudSpawner : MonoBehaviour
 {
     public GameObject cloudPreFab;
 
+    public int minStartingClouds;
+    public int maxStartingClouds;
     public float minSpawnTime;
     public float maxSpawnTime;
     public float minCloudSpeed;
@@ -19,6 +21,9 @@ public class CloudSpawner : MonoBehaviour
 
     float spawnDelta = 30f;
 
+    const string backgroundBehindSortingLayer = "Background Behind";
+    const string backgroundInfrontSortingLayer = "Background Infront";
+
     void Start()
     {
         cameraBrain = GetComponentInParent<Cinemachine.CinemachineBrain>();
@@ -26,30 +31,65 @@ public class CloudSpawner : MonoBehaviour
         cloudSpawnTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
         listOfClouds = new List<GameObject>();
 
-        cloudSpawnTimer.SetTimer(Random.Range(minSpawnTime, maxSpawnTime), SpawnCloud);
+        InitializeClouds();
+
+        cloudSpawnTimer.SetTimer(Random.Range(minSpawnTime, maxSpawnTime), SpawnCloudOnTimer);
     }
 
-    public void SpawnCloud()
+    // Initialization works best if the starting position of the main camera approximately matches up with the first room.
+    public void InitializeClouds()
     {
-        var cloud = Instantiate(cloudPreFab, transform.position + new Vector3(-1 * spawnDelta, Random.Range(minCloudHeight, maxCloudHeight), 0), transform.rotation);
+        int numStartingClouds = Random.Range(minStartingClouds, maxStartingClouds);
 
+        for (int i = 0; i < numStartingClouds; i++)
+        {
+            SpawnCloud(Random.Range(transform.position.x - spawnDelta, transform.position.x));
+        }
+    }
+
+    void SpawnCloud(float cloudStartingX)
+    {
+        CloudSpawnValues cloudSpawnValues = SetCloudSpawnValues();
+
+        var cloud = Instantiate(cloudPreFab, transform.position + new Vector3(cloudStartingX, cloudSpawnValues.cloudHeight, 0), transform.rotation);
         listOfClouds.Add(cloud);
-
         cloud.transform.parent = transform.parent;
 
         CloudController cloudController = cloud.GetComponent<CloudController>();
-        cloudController.cloudSpeed = new Vector3(Random.Range(minCloudSpeed, maxCloudSpeed), 0, 0);
-
         SpriteRenderer cloudSpriteRenderer = cloud.GetComponent<SpriteRenderer>();
-        cloudSpriteRenderer.sortingLayerName = Random.Range(0f, 1f) > 0.5f ? "Background Infront" : "Background Behind";
-
         AnimationFramePickerSystem cloudFramePicker = cloud.GetComponent<AnimationFramePickerSystem>();
+
+        // Set remaining cloud spawn variables
+        cloudController.cloudSpeed = cloudSpawnValues.cloudSpeed;
+        cloudSpriteRenderer.sortingLayerName = cloudSpawnValues.isBackgroundBehind ? "Background Behind" : "Background Infront";
         cloudFramePicker.RandomSprite();
+    }
 
-        cloudSpawnTimer.SetTimer(Random.Range(minSpawnTime, maxSpawnTime), SpawnCloud);
+    void SpawnCloudOnTimer()
+    {
+        SpawnCloud(-1 * spawnDelta);
 
+        // Reset timer for next cloud spawn
+        cloudSpawnTimer.SetTimer(Random.Range(minSpawnTime, maxSpawnTime), SpawnCloudOnTimer);
+
+        // Check if clouds are out of view to be removed
         if (!cameraBrain.IsBlending)
             DespawnClouds();
+    }
+
+    CloudSpawnValues SetCloudSpawnValues()
+    {
+        float cloudSpeed;
+        float cloudHeight;
+        bool isBackgroundBehind;
+
+        float cloudSpeedThreshold = (minCloudSpeed + maxCloudSpeed) / 2f;
+
+        cloudSpeed = Random.Range(minCloudSpeed, maxCloudSpeed);
+        cloudHeight = transform.position.y + Mathf.Lerp(minCloudHeight, maxCloudHeight, Mathf.InverseLerp(minCloudSpeed, maxCloudSpeed, cloudSpeed));
+        isBackgroundBehind = (cloudSpeed > cloudSpeedThreshold);
+
+        return new CloudSpawnValues(cloudSpeed, cloudHeight, isBackgroundBehind);
     }
 
     void DespawnClouds()
@@ -89,5 +129,19 @@ public class CloudSpawner : MonoBehaviour
         startPos = new Vector3(-10, maxCloudHeight, 0) + transform.position;
         endPos = new Vector3(10, maxCloudHeight, 0) + transform.position;
         Gizmos.DrawLine(startPos, endPos);
+    }
+
+    struct CloudSpawnValues
+    {
+        public float cloudSpeed;
+        public float cloudHeight;
+        public bool isBackgroundBehind;
+
+        public CloudSpawnValues(float _cloudSpeed, float _cloudHeight, bool _isBackgroundBehind)
+        {
+            cloudSpeed = _cloudSpeed;
+            cloudHeight = _cloudHeight;
+            isBackgroundBehind = _isBackgroundBehind;
+        }
     }
 }
