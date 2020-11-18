@@ -35,4 +35,10 @@ public class AnimationFramePickerSystem : MonoBehaviour
         Sprite sprite = sprites[Array.IndexOf(names, name)];
         spriteRenderer.sprite = sprite;
     }
+
+    public void RandomSprite()
+    {
+        int index = UnityEngine.Random.Range(0, sprites.Length);
+        spriteRenderer.sprite = sprites[index];
+    }
 }
