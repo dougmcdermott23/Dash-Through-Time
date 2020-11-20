@@ -6,26 +6,11 @@ public class SpringPlatform : Platform
 {
     Animator animator;
 
-    public float maxJumpHeight = 8;
-    public float minJumpHeight = 3;
-    public float timeToJumpApex = 0.4f;
-
-    [HideInInspector]
-    public float maxJumpVelocity;
-    [HideInInspector]
-    public float minJumpVelocity = 0;
-    float gravity;
-
     public override void Start()
     {
         base.Start();
 
         animator = GetComponent<Animator>();
-
-        // From Kinematic Equations
-        gravity = -(2 * maxJumpHeight) / Mathf.Pow(timeToJumpApex, 2);
-        maxJumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;
-        minJumpVelocity = Mathf.Sqrt(2 * Mathf.Abs(gravity) * minJumpHeight);
     }
 
     void Update()
@@ -39,7 +24,7 @@ public class SpringPlatform : Platform
             var listOfPassengers = FindPassengers();
             foreach (GameObject passenger in listOfPassengers)
             {
-                passenger.SendMessage("HandleSpringPlatform", new List<float>() { maxJumpVelocity, minJumpVelocity });
+                passenger.SendMessage("HandleSpringPlatform", new SpringVelocityVector(Vector3.zero, false));
             }
         }
     }

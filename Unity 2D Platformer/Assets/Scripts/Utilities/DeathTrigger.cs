@@ -9,14 +9,14 @@ using UnityEngine;
 [RequireComponent(typeof(Collider2D))]
 public class DeathTrigger : MonoBehaviour
 {
-	Collider2D collider2D;
+	Collider2D deathCollider;
 
 	RoomManager roomManager;
 
 	void Start()
 	{
-		collider2D = gameObject.GetComponent<Collider2D>();
-		collider2D.isTrigger = true;
+		deathCollider = gameObject.GetComponent<Collider2D>();
+		deathCollider.isTrigger = true;
 
 		roomManager = gameObject.GetComponentInParent<RoomManager>();
 	}

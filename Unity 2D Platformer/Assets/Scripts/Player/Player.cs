@@ -55,6 +55,13 @@ public class Player : MonoBehaviour {
 	float gravity;
 
 	// Spring
+	[Header("Spring")]
+	public float maxSpringJumpHeight = 8;
+	public float minSpringJumpHeight = 3;
+	public float timeToSpringJumpApex = 0.4f;
+	float maxSpringJumpVelocity;
+	float minSpringJumpVelocity;
+	float springGravity;
 	bool springJump;
 
 	// Wall sliding
@@ -126,10 +133,15 @@ public class Player : MonoBehaviour {
 		pointsInTime = new List<PointInTime>();
 		trailPositions = new List<Vector3>();
 
-		// From Kinematic Equations
+		// Grounded Jump from kinematic equations
 		gravity = -(2 * maxJumpHeight) / Mathf.Pow (timeToJumpApex, 2);
 		maxJumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;
 		minJumpVelocity = Mathf.Sqrt (2 * Mathf.Abs(gravity) * minJumpHeight);
+
+		// Spring Jump from kinematic equations
+		springGravity = -(2 * maxSpringJumpHeight) / Mathf.Pow(timeToSpringJumpApex, 2);
+		maxSpringJumpVelocity = Mathf.Abs(springGravity) * timeToSpringJumpApex;
+		minSpringJumpVelocity = Mathf.Sqrt(2 * Mathf.Abs(springGravity) * minSpringJumpHeight);
 
 		// Calculate dash speed
 		dashSpeed = dashDistance / maxDashTime;
@@ -458,20 +470,24 @@ public class Player : MonoBehaviour {
 		jumpBufferTimer.SetTimer(jumpBufferMaxTime);
 	}
 
-	public void HandleSpringPlatform(List<float> jumpVelocities)
+	public void HandleSpringPlatform(SpringVelocityVector springVelocity)
 	{
-		float maxSpringVelocity = jumpVelocities[0];
-		float minSpringVelocity = jumpVelocities[1];
-
-		if (!jumpBufferTimer.IsTimerComplete())
+		if (springVelocity.AssignSpringVelocity)
 		{
-			_velocity.y = maxSpringVelocity;
-
-			jumpBufferTimer.CancelTimer();
+			_velocity = springVelocity.SpringVelocity;
 		}
 		else
 		{
-			_velocity.y = minSpringVelocity;
+			if (!jumpBufferTimer.IsTimerComplete())
+			{
+				_velocity.y = maxSpringJumpVelocity;
+
+				jumpBufferTimer.CancelTimer();
+			}
+			else
+			{
+				_velocity.y = minSpringJumpVelocity;
+			}
 		}
 
 		ResetDash();
