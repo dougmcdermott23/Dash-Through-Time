@@ -2,17 +2,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(BoxCollider2D))]
+/// TO DO:
+/// This needs to be changed so that it will talk to the GameManager.
+/// The Game Manager will hold the current room manager and send the reset command to the correct room
+
+[RequireComponent(typeof(Collider2D))]
 public class DeathTrigger : MonoBehaviour
 {
-	BoxCollider2D boxCollider2D;
+	Collider2D collider2D;
 
 	RoomManager roomManager;
 
 	void Start()
 	{
-		boxCollider2D = gameObject.GetComponent<BoxCollider2D>();
-		boxCollider2D.isTrigger = true;
+		collider2D = gameObject.GetComponent<Collider2D>();
+		collider2D.isTrigger = true;
 
 		roomManager = gameObject.GetComponentInParent<RoomManager>();
 	}

@@ -61,6 +61,9 @@ public class MovingPlatform : Platform
 	// The greater the distance, the slower the percentage will increase
 	Vector3 CalculatePlatformMovement()
 	{
+		if (globalWaypoints.Length <= 0)
+			return Vector3.zero;
+
 		if (Time.time < nextMoveTime)
 			return Vector3.zero;
 

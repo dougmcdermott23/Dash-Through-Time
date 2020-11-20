@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class SpringPlatform : Platform
 {
+    Animator animator;
+
     public float maxJumpHeight = 8;
     public float minJumpHeight = 3;
     public float timeToJumpApex = 0.4f;
@@ -18,6 +20,8 @@ public class SpringPlatform : Platform
     {
         base.Start();
 
+        animator = GetComponent<Animator>();
+
         // From Kinematic Equations
         gravity = -(2 * maxJumpHeight) / Mathf.Pow(timeToJumpApex, 2);
         maxJumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;
@@ -30,6 +34,8 @@ public class SpringPlatform : Platform
 
         if (DetectPassenger())
         {
+            animator.SetTrigger("activateSpring");
+
             var listOfPassengers = FindPassengers();
             foreach (GameObject passenger in listOfPassengers)
             {

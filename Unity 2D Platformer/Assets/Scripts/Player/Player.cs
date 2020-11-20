@@ -474,6 +474,8 @@ public class Player : MonoBehaviour {
 			_velocity.y = minSpringVelocity;
 		}
 
+		ResetDash();
+
 		// Set for state controller
 		_jump = true;
 		springJump = true;
