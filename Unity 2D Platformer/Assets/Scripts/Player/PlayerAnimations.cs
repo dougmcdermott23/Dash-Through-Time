@@ -6,10 +6,9 @@ using UnityEngine;
 public class PlayerAnimations : MonoBehaviour
 {
     Player player;
-
     Animator animator;
-
     SpriteRenderer spriteRenderer;
+    DashEchoEffect dashEcho;
 
     PreviousFrameParameters previousFrameParameters;
     [HideInInspector] public bool facingRight = true;
@@ -34,6 +33,7 @@ public class PlayerAnimations : MonoBehaviour
         player = GetComponentInParent<Player>();
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        dashEcho = GetComponent<DashEchoEffect>();
     }
 
     public int GetPlayerAnimation()
@@ -116,7 +116,10 @@ public class PlayerAnimations : MonoBehaviour
         animator.SetBool("isDashing", player.Dash);
 
         if (player.Dash && !previousFrameParameters.dash)
+        {
             animator.SetTrigger("startDash");
+            dashEcho.SpawnDashEcho(facingRight);
+        }
 
         #endregion
 

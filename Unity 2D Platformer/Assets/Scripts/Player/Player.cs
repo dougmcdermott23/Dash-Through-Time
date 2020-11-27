@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Cinemachine;
 
 [RequireComponent(typeof(Controller))]
 public class Player : MonoBehaviour {
@@ -32,6 +33,8 @@ public class Player : MonoBehaviour {
 
 	PlayerAnimations playerAnimations;
 	PlayerTrail playerTrail;
+
+	CinemachineImpulseSource cinemachineImpulseSource;
 
 	// Ground movement
 	[Header("Ground Movement")]
@@ -109,6 +112,8 @@ public class Player : MonoBehaviour {
 	void Start()
 	{
 		_playerController = GetComponent<Controller>();
+
+		cinemachineImpulseSource = GetComponent<CinemachineImpulseSource>();
 
 		coyoteTimeJumpTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
 		jumpBufferTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
@@ -564,6 +569,8 @@ public class Player : MonoBehaviour {
 
 		// Set for state controller
 		_rewind = false;
+
+		//cinemachineImpulseSource.GenerateImpulse();
 	}
 
 	void ResetRewind()
