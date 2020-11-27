@@ -101,11 +101,12 @@ public class Player : MonoBehaviour {
 	Timer rewindTimer;
 	List<PointInTime> pointsInTime;
 	List<Vector3> trailPositions;
-	PlayerRewindStates rewindState = PlayerRewindStates.RECORDING;
+	PlayerRewindStates rewindState = PlayerRewindStates.REWIND_NOT_AVAILABLE;
 
 	// Level Transition
 	[Header("Level Transition")]
 	public GameObject playerDeathPrefab;
+	public GameObject ghostDeathPrefab;
 	public float levelTransitionTime = 0.5f;
 	public float deathTransitionTime = 2f;
 	bool pausePlayerControl;
@@ -158,7 +159,9 @@ public class Player : MonoBehaviour {
 		if (pausePlayerControl)
 			return;
 
-		if (rewindState == PlayerRewindStates.RECORDING)
+		Debug.Log(rewindState.ToString());
+
+		if (rewindState != PlayerRewindStates.REWINDING)
 		{
 			CalculatePlayerVelocity();
 
@@ -210,9 +213,10 @@ public class Player : MonoBehaviour {
 			playerAnimations.SetSpriteEnabled(false);
 			Instantiate(playerDeathPrefab, transform.position + new Vector3(0, 0.5f, 0), transform.rotation);
 
+			Instantiate(ghostDeathPrefab, playerRewindGhost.transform.position + new Vector3(0, 0.5f, 0), transform.rotation);
 			Destroy(playerRewindGhost);
-			playerTrail.SetTrailRendererEmitting(false);
-			playerTrail.ResetTrailRenderer();
+
+			playerTrail.FadeOut(deathTransitionTime);
 
 			StartCoroutine(ResetPlayer(deathTransitionTime, isPlayerDead, playerSpawnLocations[0], Vector3.zero));
 		}
@@ -516,7 +520,7 @@ public class Player : MonoBehaviour {
 
 	public void StartRewind()
 	{
-		if (rewindState != PlayerRewindStates.REWINDING && !_dead)
+		if (rewindState == PlayerRewindStates.REWIND_AVAILABLE && !_dead)
 		{
 			rewindState = PlayerRewindStates.REWINDING;
 			rewindTimer.SetTimer(maxRewindTime, delegate() { StopRewind(); });
@@ -541,6 +545,8 @@ public class Player : MonoBehaviour {
 			trailPositions.RemoveAt(0);
 
 			removedPointFromList = true;
+
+			rewindState = PlayerRewindStates.REWIND_AVAILABLE;
 		}
 
 		try
@@ -583,7 +589,7 @@ public class Player : MonoBehaviour {
 
 	void ResetRewind()
 	{
-		rewindState = PlayerRewindStates.RECORDING;
+		rewindState = PlayerRewindStates.REWIND_NOT_AVAILABLE;
 
 		pointsInTime.Clear();
 		trailPositions.Clear();

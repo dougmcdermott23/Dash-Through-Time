@@ -11,7 +11,8 @@ public enum PlayerDashStates
 
 public enum PlayerRewindStates
 {
-    RECORDING,
+    REWIND_NOT_AVAILABLE,
+	REWIND_AVAILABLE,
     REWINDING
 }
 
