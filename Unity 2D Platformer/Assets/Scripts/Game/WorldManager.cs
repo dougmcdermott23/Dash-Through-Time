@@ -1,14 +1,24 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Cinemachine;
 
 public class WorldManager : MonoBehaviour
 {
+    Cinemachine.CinemachineBrain cinemachineBrain;
+    Cinemachine.ICinemachineCamera currentCinemachineCamera;
+
+    Player player;
+
     List<RoomManager> worldLevels;
     RoomManager currentLevel;
 
     void Start()
     {
+        cinemachineBrain = Camera.main.GetComponent<Cinemachine.CinemachineBrain>();
+
+        player = FindObjectOfType<Player>();
+
         worldLevels = new List<RoomManager>();
 
         foreach (RoomManager child in gameObject.GetComponentsInChildren<RoomManager>())
@@ -23,7 +33,17 @@ public class WorldManager : MonoBehaviour
 
     void Update()
     {
+        if (currentCinemachineCamera != cinemachineBrain.ActiveVirtualCamera)
+        {
+            currentCinemachineCamera = cinemachineBrain.ActiveVirtualCamera;
+            currentLevel = currentCinemachineCamera.VirtualCameraGameObject.GetComponentInParent<RoomManager>();
+        }
+    }
 
+    public void OnPlayerDeath()
+    {
+        currentLevel.ResetLevel();
+        player.OnReset(true, currentLevel.playerSpawnLocations);
     }
 
     private static int CompareWorldLevels(RoomManager x, RoomManager y)
