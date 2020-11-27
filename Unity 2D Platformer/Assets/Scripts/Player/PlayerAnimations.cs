@@ -10,6 +10,11 @@ public class PlayerAnimations : MonoBehaviour
     SpriteRenderer spriteRenderer;
     DashEchoEffect dashEcho;
 
+    public ParticleSystem moveDust;
+    public ParticleSystem wallSlideDust;
+
+    float wallSlideDustOffset;
+
     PreviousFrameParameters previousFrameParameters;
     [HideInInspector] public bool facingRight = true;
 
@@ -34,6 +39,8 @@ public class PlayerAnimations : MonoBehaviour
         animator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         dashEcho = GetComponent<DashEchoEffect>();
+
+        wallSlideDustOffset = wallSlideDust.transform.localPosition.x;
     }
 
     public int GetPlayerAnimation()
@@ -55,6 +62,10 @@ public class PlayerAnimations : MonoBehaviour
             facingRight = !facingRight;
 
         spriteRenderer.flipX = !facingRight;
+
+        // Create dust when player changes direction
+        if (player.PlayerController.collisions.below)
+            CreateDust(moveDust);
     }
 
     public void SetAnimationParameters()
@@ -81,6 +92,9 @@ public class PlayerAnimations : MonoBehaviour
 
         animator.SetBool("isGrounded", player.PlayerController.collisions.below);
 
+        if (player.PlayerController.collisions.below && !previousFrameParameters.collisionInfo.below)
+            CreateDust(moveDust);
+
         #endregion
 
         #region Wall Sliding
@@ -92,12 +106,26 @@ public class PlayerAnimations : MonoBehaviour
         animator.SetBool("wasWallSliding", previousFrameParameters.wallSlide);
         animator.SetBool("isWallKick", wallKick);
 
+        if (player.WallSlide)
+        {
+            if (facingRight)
+                wallSlideDust.transform.localPosition = new Vector3(wallSlideDustOffset, wallSlideDust.transform.localPosition.y, wallSlideDust.transform.localPosition.z);
+            else
+                wallSlideDust.transform.localPosition = new Vector3(-wallSlideDustOffset, wallSlideDust.transform.localPosition.y, wallSlideDust.transform.localPosition.z);
+            
+            CreateDust(wallSlideDust);
+        }
+
         #endregion
 
         #region Jump
 
         if (player.Jump)
+        {
             animator.SetTrigger("jump");
+
+            CreateDust(moveDust);
+        }
 
         #endregion
 
@@ -138,5 +166,10 @@ public class PlayerAnimations : MonoBehaviour
     public void SetSpriteEnabled(bool enabled)
     {
         spriteRenderer.enabled = enabled;
+    }
+
+    void CreateDust(ParticleSystem dust)
+    {
+        dust.Play();
     }
 }

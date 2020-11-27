@@ -159,8 +159,6 @@ public class Player : MonoBehaviour {
 		if (pausePlayerControl)
 			return;
 
-		Debug.Log(rewindState.ToString());
-
 		if (rewindState != PlayerRewindStates.REWINDING)
 		{
 			CalculatePlayerVelocity();
