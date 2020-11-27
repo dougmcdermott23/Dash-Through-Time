@@ -17,7 +17,7 @@ public class Player : MonoBehaviour {
 	private Vector3 _velocity;
 
 	public bool Jump { get { return _jump; } private set { _jump = value; } }
-	public bool _jump;
+	private bool _jump;
 
 	public bool WallSlide { get { return _wallSlide; } private set { _wallSlide = value; } }
 	private bool _wallSlide;
@@ -105,8 +105,9 @@ public class Player : MonoBehaviour {
 
 	// Level Transition
 	[Header("Level Transition")]
+	public GameObject playerDeathPrefab;
 	public float levelTransitionTime = 0.5f;
-	public float deathTransitionTime = 0.5f;
+	public float deathTransitionTime = 2f;
 	bool pausePlayerControl;
 
 	void Start()
@@ -205,6 +206,13 @@ public class Player : MonoBehaviour {
 		{
 			// Set for state controller
 			_dead = true;
+
+			playerAnimations.SetSpriteEnabled(false);
+			Instantiate(playerDeathPrefab, transform.position + new Vector3(0, 0.5f, 0), transform.rotation);
+
+			Destroy(playerRewindGhost);
+			playerTrail.SetTrailRendererEmitting(false);
+			playerTrail.ResetTrailRenderer();
 
 			StartCoroutine(ResetPlayer(deathTransitionTime, isPlayerDead, playerSpawnLocations[0], Vector3.zero));
 		}
@@ -508,7 +516,7 @@ public class Player : MonoBehaviour {
 
 	public void StartRewind()
 	{
-		if (rewindState != PlayerRewindStates.REWINDING)
+		if (rewindState != PlayerRewindStates.REWINDING && !_dead)
 		{
 			rewindState = PlayerRewindStates.REWINDING;
 			rewindTimer.SetTimer(maxRewindTime, delegate() { StopRewind(); });
@@ -618,17 +626,23 @@ public class Player : MonoBehaviour {
 
 		yield return new WaitForSeconds(time);
 
-		if (isPlayerDead)
-			transform.position = playerSpawnLocation;
-
-		ResetDash();
-		ResetRewind();
-
 		// Set for state controller
 		_dead = false;
 
 		if (!isPlayerDead)
+		{
 			_velocity = playerPauseVelocity + playerBoostVelocity;
+		}
+		else
+		{
+			transform.position = playerSpawnLocation;
+			_velocity = Vector3.zero;
+			playerAnimations.SetSpriteEnabled(true);
+		}
+
+		ResetDash();
+		ResetRewind();
+
 		pausePlayerControl = false;
 	}
 }
