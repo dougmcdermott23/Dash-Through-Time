@@ -40,7 +40,8 @@ public class WorldManager : MonoBehaviour
         if (currentCinemachineCamera != cinemachineBrain.ActiveVirtualCamera)
         {
             currentCinemachineCamera = cinemachineBrain.ActiveVirtualCamera;
-            currentLevel = currentCinemachineCamera.VirtualCameraGameObject.GetComponentInParent<RoomManager>();
+            if (currentCinemachineCamera != null)
+                currentLevel = currentCinemachineCamera.VirtualCameraGameObject.GetComponentInParent<RoomManager>();
         }
     }
 
@@ -102,8 +103,6 @@ public class WorldManager : MonoBehaviour
 
     IEnumerator ScreenWipe(float transitionTime = 1)
     {
-        var start = Time.time;
-
         transition.gameObject.SetActive(true);
         player.OnReset(true, currentLevel.playerSpawnLocations);
         transition.SetTrigger("wipeScreen");
@@ -116,7 +115,5 @@ public class WorldManager : MonoBehaviour
         yield return new WaitForSeconds(transitionTime);
 
         transition.gameObject.SetActive(false);
-
-        Debug.Log(Time.time - start);
     }
 }

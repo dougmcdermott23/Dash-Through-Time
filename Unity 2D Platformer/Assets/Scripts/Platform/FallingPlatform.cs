@@ -4,7 +4,9 @@ using UnityEngine;
 
 public class FallingPlatform : Platform
 {
-	MeshRenderer meshRenderer;
+	SpriteRenderer spriteRenderer;
+	Animator animator;
+	ParticleSystem particles;
 	int startLayer;
 
 	Vector3 velocity;
@@ -12,6 +14,7 @@ public class FallingPlatform : Platform
 	public float platformFallTime = 1;
 	public float platformDisabledTime = 1;
 	public float gravity = 1;
+	bool prevPlatformTriggered;
 	bool isPlatformTriggered;
 	bool isPlatformFalling;
 	bool isPlatformDisabled;
@@ -20,10 +23,14 @@ public class FallingPlatform : Platform
 	{
 		base.Start();
 
-		meshRenderer = gameObject.GetComponent<MeshRenderer>();
+		spriteRenderer = gameObject.GetComponent<SpriteRenderer>();
+		animator = gameObject.GetComponent<Animator>();
+		particles = gameObject.GetComponent<ParticleSystem>();
 		startLayer = gameObject.layer;
 
+		prevPlatformTriggered = false;
 		isPlatformTriggered = false;
+
 		velocity = Vector3.zero;
 	}
 
@@ -33,6 +40,7 @@ public class FallingPlatform : Platform
 
 		Vector3 velocity = new Vector3();
 
+		prevPlatformTriggered = isPlatformTriggered;
 		isPlatformTriggered = isPlatformTriggered || DetectPassenger();
 
 		velocity += CalculatePlatformMovement();
@@ -50,11 +58,12 @@ public class FallingPlatform : Platform
 		StopAllCoroutines();
 
 		velocity = Vector3.zero;
+		prevPlatformTriggered = false;
 		isPlatformTriggered = false;
 		isPlatformFalling = false;
 		isPlatformDisabled = false;
 
-		meshRenderer.enabled = true;
+		spriteRenderer.enabled = true;
 		gameObject.layer = startLayer;
 	}
 
@@ -62,7 +71,7 @@ public class FallingPlatform : Platform
 	// There is a specified delay before the platform can move
 	Vector3 CalculatePlatformMovement()
 	{
-		if (isPlatformTriggered)
+		if (isPlatformTriggered && !prevPlatformTriggered)
 		{
 			StartCoroutine(PlatformFall(delayBeforeFall));
 		}
@@ -89,8 +98,16 @@ public class FallingPlatform : Platform
 		return velocity;
 	}
 
+	// Called from animation event to instantiate particle system
+	public void PlayParticles()
+	{
+		particles.Play();
+	}
+
 	IEnumerator PlatformFall(float time)
 	{
+		animator.SetTrigger("playerOnPlatform");
+
 		yield return new WaitForSeconds(time);
 
 		isPlatformFalling = true;
@@ -106,7 +123,7 @@ public class FallingPlatform : Platform
 		}
 		else
 		{
-			meshRenderer.enabled = false;
+			spriteRenderer.enabled = false;
 			gameObject.layer = 0;
 		}
 
