@@ -13,6 +13,8 @@ public class WorldManager : MonoBehaviour
     List<RoomManager> worldLevels;
     RoomManager currentLevel;
 
+    public Animator transition;
+
     void Start()
     {
         cinemachineBrain = Camera.main.GetComponent<Cinemachine.CinemachineBrain>();
@@ -29,6 +31,8 @@ public class WorldManager : MonoBehaviour
         worldLevels.Sort(CompareWorldLevels);
 
         currentLevel = worldLevels[0];
+
+        transition.gameObject.SetActive(false);
     }
 
     void Update()
@@ -42,8 +46,7 @@ public class WorldManager : MonoBehaviour
 
     public void OnPlayerDeath()
     {
-        currentLevel.ResetLevel();
-        player.OnReset(true, currentLevel.playerSpawnLocations);
+        StartCoroutine(ScreenWipe());
     }
 
     private static int CompareWorldLevels(RoomManager x, RoomManager y)
@@ -95,5 +98,25 @@ public class WorldManager : MonoBehaviour
                 }
             }
         }
+    }
+
+    IEnumerator ScreenWipe(float transitionTime = 1)
+    {
+        var start = Time.time;
+
+        transition.gameObject.SetActive(true);
+        player.OnReset(true, currentLevel.playerSpawnLocations);
+        transition.SetTrigger("wipeScreen");
+
+        yield return new WaitForSeconds(transitionTime);
+
+        // Reset level when screen is covered
+        currentLevel.ResetLevel();
+
+        yield return new WaitForSeconds(transitionTime);
+
+        transition.gameObject.SetActive(false);
+
+        Debug.Log(Time.time - start);
     }
 }

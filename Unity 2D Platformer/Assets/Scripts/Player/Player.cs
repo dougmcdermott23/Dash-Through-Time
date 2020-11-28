@@ -108,7 +108,7 @@ public class Player : MonoBehaviour {
 	public GameObject playerDeathPrefab;
 	public GameObject ghostDeathPrefab;
 	public float levelTransitionTime = 0.5f;
-	public float deathTransitionTime = 2f;
+	public float deathTransitionTime = 1.5f; // This was set to match up with the screen wipe after death
 	bool pausePlayerControl;
 
 	void Start()
