@@ -38,6 +38,7 @@ public class RoomManager : MonoBehaviour
             virtualCamera.SetActive(true);
 
             ResetLevel();
+            collision.gameObject.GetComponent<Player>().OnReset(false, playerSpawnLocations);
         }
     }
 

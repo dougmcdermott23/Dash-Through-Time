@@ -11,6 +11,7 @@ public class MovingPlatform : Platform
 
 	public Vector3[] localWaypoints;
 	Vector3[] globalWaypoints;
+	Vector3[] initialGlobalWaypoints;
 	public bool isCyclic;
 	float nextMoveTime;
 	int fromWaypointIndex;
@@ -22,8 +23,12 @@ public class MovingPlatform : Platform
 
 		// Set globalWaypoints for calculations
 		globalWaypoints = new Vector3[localWaypoints.Length];
+		initialGlobalWaypoints = new Vector3[localWaypoints.Length];
 		for (int i = 0; i < localWaypoints.Length; i++)
+		{
 			globalWaypoints[i] = localWaypoints[i] + transform.position;
+			initialGlobalWaypoints[i] = localWaypoints[i] + transform.position;
+		}
 	}
 
 	void Update()
@@ -47,6 +52,9 @@ public class MovingPlatform : Platform
 		nextMoveTime = 0;
 		fromWaypointIndex = 0;
 		percentBetweenWaypoints = 0;
+
+		for (int i = 0; i < globalWaypoints.Length; i++)
+			globalWaypoints[i] = initialGlobalWaypoints[i];
 	}
 
 	// Function to create a gradual increase and decrease in speed from waypoints
