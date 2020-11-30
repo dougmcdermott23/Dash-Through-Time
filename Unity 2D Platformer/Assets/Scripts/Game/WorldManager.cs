@@ -2,24 +2,28 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Cinemachine;
+using TMPro;
 
 public class WorldManager : MonoBehaviour
 {
     Cinemachine.CinemachineBrain cinemachineBrain;
     Cinemachine.ICinemachineCamera currentCinemachineCamera;
 
+    public Animator transition;
+    public TextMeshProUGUI playerDeathCounter;
+
     Player player;
+    public GameObject playerPrefab;
 
     List<RoomManager> worldLevels;
     RoomManager currentLevel;
 
-    public Animator transition;
+    int playerDeaths = 0;
+    public int startingLevel = 0;
 
     void Start()
     {
         cinemachineBrain = Camera.main.GetComponent<Cinemachine.CinemachineBrain>();
-
-        player = FindObjectOfType<Player>();
 
         worldLevels = new List<RoomManager>();
 
@@ -33,6 +37,14 @@ public class WorldManager : MonoBehaviour
         currentLevel = worldLevels[0];
 
         transition.gameObject.SetActive(false);
+
+        if (Application.isEditor)
+        {
+            currentLevel = worldLevels[startingLevel];
+        }
+
+        var playerObj = Instantiate(playerPrefab, currentLevel.playerSpawnLocations[0], transform.rotation);
+        player = playerObj.GetComponent<Player>();
     }
 
     void Update()
@@ -47,6 +59,8 @@ public class WorldManager : MonoBehaviour
 
     public void OnPlayerDeath()
     {
+        playerDeaths++;
+        playerDeathCounter.SetText(playerDeaths.ToString("D3"));
         StartCoroutine(ScreenWipe());
     }
 
