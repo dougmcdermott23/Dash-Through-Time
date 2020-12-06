@@ -36,6 +36,8 @@ public class Player : MonoBehaviour {
 
 	CinemachineImpulseSource cinemachineImpulseSource;
 
+	public List<GameObject> listOfKeys;
+
 	// Ground movement
 	[Header("Ground Movement")]
 	public float moveSpeed = 6;
@@ -116,6 +118,8 @@ public class Player : MonoBehaviour {
 		_playerController = GetComponent<Controller>();
 
 		cinemachineImpulseSource = GetComponent<CinemachineImpulseSource>();
+
+		listOfKeys = new List<GameObject>();
 
 		coyoteTimeJumpTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
 		jumpBufferTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
@@ -202,6 +206,8 @@ public class Player : MonoBehaviour {
 	public void OnReset(bool isPlayerDead, Vector3[] playerSpawnLocations)
 	{
 		ResetStateVariables(true);
+
+		listOfKeys.Clear();
 
 		if (isPlayerDead)
 		{

@@ -8,6 +8,8 @@ public class RoomManager : MonoBehaviour
     BoxCollider2D boxCollider2D;
 
     Platform[] levelPlatforms;
+    InteractableKey[] levelKeys;
+    InteractableDoor[] levelDoors;
 
     public GameObject virtualCamera;
     public Vector3[] playerSpawnLocations;
@@ -17,7 +19,9 @@ public class RoomManager : MonoBehaviour
         boxCollider2D = gameObject.GetComponent<BoxCollider2D>();
         boxCollider2D.isTrigger = true;
 
-        levelPlatforms = GetComponentsInChildren<Platform>(true);
+        levelPlatforms = gameObject.GetComponentsInChildren<Platform>(true);
+        levelKeys = gameObject.GetComponentsInChildren<InteractableKey>(true);
+        levelDoors = gameObject.GetComponentsInChildren<InteractableDoor>(true);
 
         if (playerSpawnLocations == null)
             Debug.LogError("Room requires at least one spawn location!");
@@ -28,6 +32,16 @@ public class RoomManager : MonoBehaviour
         foreach (Platform platform in levelPlatforms)
         {
             platform.OnReset();
+        }
+
+        foreach (InteractableKey key in levelKeys)
+        {
+            key.OnReset();
+        }
+
+        foreach (InteractableDoor door in levelDoors)
+        {
+            door.OnReset();
         }
     }
 
@@ -47,6 +61,8 @@ public class RoomManager : MonoBehaviour
         if (collision.CompareTag("Player"))
         {
             virtualCamera.SetActive(false);
+
+            ResetLevel();
         }
     }
 
