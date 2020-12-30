@@ -5202,7 +5202,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0.5}
+  m_Offset: {x: 0, y: 0.4}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0}
@@ -5213,7 +5213,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 1, y: 2}
+  m_Size: {x: 1, y: 1.8}
   m_EdgeRadius: 0
 --- !u!114 &4152891022710520614
 MonoBehaviour:
@@ -5249,6 +5249,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e499cfbd932143c2b345773ff0bbc3d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  listOfKeys: []
   moveSpeed: 10
   maxJumpHeight: 4
   minJumpHeight: 1
@@ -5258,6 +5259,7 @@ MonoBehaviour:
   maxSpringJumpHeight: 8
   minSpringJumpHeight: 3
   timeToSpringJumpApex: 0.4
+  springJumpBufferMaxTime: 0.1
   wallJumpClimb: {x: 5, y: 22.5}
   wallJumpOff: {x: 15, y: 25}
   wallJumpLeap: {x: 15, y: 25}
@@ -5273,7 +5275,7 @@ MonoBehaviour:
     type: 3}
   rewindEndPreFab: {fileID: 4901970856368988943, guid: 2f3bd3b55c7d0c148bbb4ac613026feb,
     type: 3}
-  maxRecordTime: 2
+  maxRecordTime: 1
   maxRewindTime: 0.25
   playerDeathPrefab: {fileID: 1453052744094076144, guid: dbb4b102a77bdef48887e49039c338d9,
     type: 3}

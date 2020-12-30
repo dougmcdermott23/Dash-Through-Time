@@ -33,11 +33,11 @@ public class InteractableKey : MonoBehaviour
             else
                 followObject = player.gameObject;
 
-            transform.position = Vector3.Lerp(transform.position, followObject.transform.position, moveSpeed * Time.deltaTime);
+            transform.position = Vector3.Lerp(transform.position, followObject.transform.position + new Vector3(0, 0.5f, 0), moveSpeed * Time.deltaTime);
         }
         else
         {
-            transform.position = new Vector3(transform.position.x, animationCurve.Evaluate((Time.time * animationSpeed % animationCurve.length)) * animationHeight, transform.position.z);
+            transform.position = new Vector3(transform.position.x, animationCurve.Evaluate((Time.time * animationSpeed % animationCurve.length)) * animationHeight + keyStartPosition.y, transform.position.z);
         }
     }
 

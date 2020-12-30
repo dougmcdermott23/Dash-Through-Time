@@ -11,6 +11,8 @@ public class WorldManager : MonoBehaviour
 
     public Animator transition;
     public TextMeshProUGUI playerDeathCounter;
+    public TextMeshProUGUI finalTime;
+    public TextMeshProUGUI finalDeathCount;
 
     Player player;
     public GameObject playerPrefab;
@@ -62,6 +64,15 @@ public class WorldManager : MonoBehaviour
         playerDeaths++;
         playerDeathCounter.SetText(playerDeaths.ToString("D3"));
         StartCoroutine(ScreenWipe());
+    }
+
+    public void PlayerWin()
+    {
+        string finalTimeString = string.Format("Time: {0}", Time.timeSinceLevelLoad.ToString("n2"));
+        string finalDeathCountString = string.Format("Deaths: {0}", playerDeaths);
+
+        finalTime.SetText(finalTimeString);
+        finalDeathCount.SetText(finalDeathCountString);
     }
 
     private static int CompareWorldLevels(RoomManager x, RoomManager y)

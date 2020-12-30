@@ -86,7 +86,7 @@ public class CloudSpawner : MonoBehaviour
         float cloudSpeedThreshold = (minCloudSpeed + maxCloudSpeed) / 2f;
 
         cloudSpeed = Random.Range(minCloudSpeed, maxCloudSpeed);
-        cloudHeight = transform.position.y + Mathf.Lerp(minCloudHeight, maxCloudHeight, Mathf.InverseLerp(minCloudSpeed, maxCloudSpeed, cloudSpeed));
+        cloudHeight = Mathf.Lerp(minCloudHeight, maxCloudHeight, Mathf.InverseLerp(minCloudSpeed, maxCloudSpeed, cloudSpeed));
         isBackgroundBehind = (cloudSpeed > cloudSpeedThreshold);
 
         return new CloudSpawnValues(cloudSpeed, cloudHeight, isBackgroundBehind);

@@ -36,6 +36,7 @@ public class Player : MonoBehaviour {
 
 	CinemachineImpulseSource cinemachineImpulseSource;
 
+	[HideInInspector]
 	public List<GameObject> listOfKeys;
 
 	// Ground movement
@@ -64,6 +65,8 @@ public class Player : MonoBehaviour {
 	public float maxSpringJumpHeight = 8;
 	public float minSpringJumpHeight = 3;
 	public float timeToSpringJumpApex = 0.4f;
+	public float springJumpBufferMaxTime = 1f;
+	Timer springJumpTimer;
 	float maxSpringJumpVelocity;
 	float minSpringJumpVelocity;
 	float springGravity;
@@ -124,6 +127,7 @@ public class Player : MonoBehaviour {
 		coyoteTimeJumpTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
 		jumpBufferTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
 		wallStickTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
+		springJumpTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
 		dashDelayTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
 		betweenDashTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
 		dashTimer = gameObject.AddComponent(typeof(Timer)) as Timer;
@@ -213,6 +217,8 @@ public class Player : MonoBehaviour {
 		{
 			// Set for state controller
 			_dead = true;
+
+			rewindTimer.CancelTimer();
 
 			playerAnimations.SetSpriteEnabled(false);
 			Instantiate(playerDeathPrefab, transform.position + new Vector3(0, 0.5f, 0), transform.rotation);
@@ -489,6 +495,14 @@ public class Player : MonoBehaviour {
 	void HandleBufferJump()
 	{
 		jumpBufferTimer.SetTimer(jumpBufferMaxTime);
+
+		if (!springJumpTimer.IsTimerComplete())
+		{
+			_velocity.y = maxSpringJumpVelocity;
+
+			jumpBufferTimer.CancelTimer();
+			springJumpTimer.CancelTimer();
+		}
 	}
 
 	public void HandleSpringPlatform(SpringVelocityVector springVelocity)
@@ -508,6 +522,7 @@ public class Player : MonoBehaviour {
 			else
 			{
 				_velocity.y = minSpringJumpVelocity;
+				springJumpTimer.SetTimer(springJumpBufferMaxTime);
 			}
 		}
 

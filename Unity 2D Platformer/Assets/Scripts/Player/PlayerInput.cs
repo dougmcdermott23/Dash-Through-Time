@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Player))]
 public class PlayerInput : MonoBehaviour
@@ -8,9 +9,12 @@ public class PlayerInput : MonoBehaviour
 
     Player player;
 
+    LevelLoader levelLoader;
+
     void Start()
     {
         player = GetComponent<Player>();
+        levelLoader = FindObjectOfType<LevelLoader>();
     }
 
     void Update()
@@ -38,6 +42,12 @@ public class PlayerInput : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.X))
         {
             player.StartRewind();
+        }
+
+        // Handle Exit
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            StartCoroutine(levelLoader.LoadLevel(SceneManager.GetActiveScene().buildIndex - 1));
         }
     }
 }
